@@ -1,0 +1,25 @@
+# Environnement virtuel
+env/
+venv/
+.venv/
+
+# Variables secrètes
+.env
+
+# Base de données locale
+db.sqlite3
+
+# Fichiers Python temporaires
+__pycache__/
+*.py[cod]
+
+# Fichiers uploadés
+media/
+
+# IDE
+.vscode/
+.idea/
+
+# Système
+.DS_Store
+Thumbs.db

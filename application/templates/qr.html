@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Générateur de QR Code — Facilo</title>
+<meta name="description" content="Créez un QR code pour un lien, un texte, un Wi-Fi ou un email, avec vos propres couleurs, directement dans votre navigateur.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=satoshi@400,500,600,700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: '#10131A',
+          inkline: '#1B2029',
+          paper: '#F6F4EF',
+          paperdim: '#EDEAE2',
+          volt: '#3D5AFE',
+          voltdeep: '#2A3FCC',
+          amber: '#FFB74A',
+          mute: '#8B93A7',
+        },
+        fontFamily: {
+          display: ['"Clash Display"', 'sans-serif'],
+          body: ['Satoshi', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'monospace'],
+        },
+        borderRadius: { '4xl': '2rem', '5xl': '2.5rem' }
+      }
+    }
+  }
+</script>
+
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+  :root{ --volt:#3D5AFE; --amber:#FFB74A; --ink:#10131A; }
+  html{ scroll-behavior:smooth; }
+  body{ font-family:'Satoshi', sans-serif; background:#F6F4EF; overflow-x:hidden; }
+
+  @media (pointer:fine){
+    body{ cursor:none; }
+    a, button, .cursor-pointer{ cursor:none; }
+  }
+  #cur-dot, #cur-ring{ position:fixed; top:0; left:0; pointer-events:none; z-index:9999; transform:translate(-50%,-50%); will-change:transform; }
+  #cur-dot{ width:7px; height:7px; border-radius:50%; background:var(--volt); transition:opacity .2s ease; }
+  #cur-ring{
+    width:38px; height:38px; border-radius:50%;
+    border:1.5px solid rgba(61,90,254,.55);
+    transition:width .25s ease,height .25s ease,background .25s ease,border-color .25s ease,opacity .2s ease;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono', monospace; font-size:9px; letter-spacing:.05em; color:#fff; text-transform:uppercase; white-space:nowrap;
+  }
+  #cur-ring.grow{ width:84px; height:84px; background:var(--volt); border-color:var(--volt); }
+  #cur-ring span{ opacity:0; transition:opacity .2s ease .05s; }
+  #cur-ring.grow span{ opacity:1; }
+  @media (pointer:coarse){ #cur-dot,#cur-ring{ display:none; } }
+
+  .reveal{ opacity:0; transform:translateY(28px); transition:opacity .7s ease, transform .7s ease; }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+  .reveal-scale{ opacity:0; transform:scale(.92); transition:opacity .7s ease, transform .7s ease; }
+  .reveal-scale.in{ opacity:1; transform:scale(1); }
+
+  @media (prefers-reduced-motion: reduce){
+    .reveal, .reveal-scale{ opacity:1 !important; transform:none !important; transition:none !important; }
+    .float-anim, .float-anim-slow, .marquee-track{ animation:none !important; }
+  }
+
+  .float-anim{ animation: floaty 6s ease-in-out infinite; }
+  .float-anim-slow{ animation: floaty 9s ease-in-out infinite; }
+  @keyframes floaty{ 0%,100%{ transform: translateY(0px) rotate(var(--rot,0deg)); } 50%{ transform: translateY(-16px) rotate(var(--rot,0deg)); } }
+
+  .blob{
+    filter: blur(60px);
+    background: radial-gradient(circle at 30% 30%, rgba(61,90,254,.55), transparent 60%),
+                radial-gradient(circle at 70% 70%, rgba(255,183,74,.35), transparent 60%);
+  }
+
+  .marquee-track{ display:flex; gap:2.5rem; width:max-content; animation: marquee 26s linear infinite; }
+  .marquee:hover .marquee-track{ animation-play-state: paused; }
+  @keyframes marquee{ from{ transform: translateX(0); } to{ transform: translateX(-50%); } }
+
+  .carousel{ scroll-snap-type:x mandatory; scrollbar-width:none; -ms-overflow-style:none; }
+  .carousel::-webkit-scrollbar{ display:none; }
+  .carousel > *{ scroll-snap-align:start; }
+
+  .card-tool{ transition: transform .35s ease, box-shadow .35s ease, border-color .35s ease; }
+  .card-tool:hover{ transform: translateY(-8px); box-shadow: 0 24px 48px -20px rgba(16,19,26,.35); border-color: rgba(61,90,254,.4); }
+
+  .btn-fill{ transition: transform .25s ease, background .25s ease; }
+  .btn-fill:hover{ transform: translateY(-2px); }
+  .btn-outline{ transition: transform .25s ease, background .25s ease, color .25s ease; }
+  .btn-outline:hover{ transform: translateY(-2px); }
+
+  .curve-mask{ border-radius: 2.5rem 2.5rem 0 0; }
+  ::selection{ background: var(--volt); color: #fff; }
+
+  /* ---------- tool-specific ---------- */
+  .accordion-item[open] .chev{ transform: rotate(180deg); }
+  .chev{ transition: transform .25s ease; }
+  summary::-webkit-details-marker{ display:none; }
+
+  input[type=range]{ -webkit-appearance:none; height:4px; border-radius:99px; background:#E3E0D8; }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
+    background: var(--volt); border:3px solid #fff; box-shadow:0 2px 8px rgba(16,19,26,.35); cursor:none;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:18px; height:18px; border-radius:50%; background: var(--volt); border:3px solid #fff; cursor:none;
+  }
+
+  input[type=color]{
+    -webkit-appearance:none; appearance:none; width:44px; height:44px; border-radius:50%;
+    border:3px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.1); padding:0; background:none; cursor:none;
+  }
+  input[type=color]::-webkit-color-swatch-wrapper{ padding:0; border-radius:50%; }
+  input[type=color]::-webkit-color-swatch{ border:none; border-radius:50%; }
+
+  .field-input{
+    width:100%; background:#EDEAE2; border:1px solid transparent; border-radius:1rem;
+    padding:.85rem 1.1rem; font-size:.9rem; color:var(--ink); transition:border-color .2s ease, background .2s ease;
+  }
+  .field-input:focus{ outline:none; border-color: var(--volt); background:#fff; }
+
+  .tab-btn{ transition: background .25s ease, color .25s ease; }
+  .tab-btn.active{ background: var(--ink); color:#fff; }
+
+  #qr-preview canvas, #qr-preview img{ border-radius:1.25rem; }
+</style>
+</head>
+<body class="text-ink antialiased">
+
+<div id="cur-dot"></div>
+<div id="cur-ring"><span>Voir</span></div>
+
+<!-- ============ NAV ============ -->
+<header class="fixed top-0 left-0 right-0 z-50">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 pt-5">
+    <nav class="flex items-center justify-between bg-ink/90 backdrop-blur-md text-white rounded-full pl-6 pr-2.5 py-2.5 border border-white/10">
+      <a href="#" class="flex items-center gap-2 font-display text-lg font-semibold cursor-pointer">
+        <span class="w-8 h-8 rounded-full bg-volt flex items-center justify-center">
+          <ion-icon name="flash" class="text-white text-base"></ion-icon>
+        </span>
+        Ivoiretools
+      </a>
+      <div class="hidden md:flex items-center gap-8 text-sm text-white/70 font-medium">
+        <a href="{% url 'acceuil' %}" class="hover:text-white transition cursor-pointer">Outils</a>
+        <a href="#comment" class="hover:text-white transition cursor-pointer">Comment ça marche</a>
+        <a href="#faq" class="hover:text-white transition cursor-pointer">FAQ</a>
+      </div>
+      <a href="#outil" class="btn-fill bg-white text-ink text-sm font-semibold px-5 py-2.5 rounded-full cursor-pointer">
+        Ouvrir l'outil
+      </a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section id="top" class="relative bg-ink text-white pt-32 pb-0 overflow-hidden">
+  <div class="absolute -top-24 -left-24 w-[26rem] h-[26rem] blob float-anim-slow"></div>
+  <div class="absolute top-40 right-0 w-[22rem] h-[22rem] blob float-anim" style="--rot:2deg"></div>
+
+  <div class="max-w-5xl mx-auto px-6 lg:px-10 relative text-center pb-24">
+    <a href="{% url 'acceuil' %}" class="cursor-pointer inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-white/50 hover:text-white transition mb-6">
+      <ion-icon name="arrow-back-outline"></ion-icon> Retour aux outils
+    </a>
+    
+    <h1 class="font-display text-5xl sm:text-6xl leading-[1.03] mt-7">
+      Un lien, un texte, <span class="text-volt">un QR code.</span>
+    </h1>
+    <p class="text-white/60 text-lg mt-6 max-w-lg mx-auto">
+      Générez un QR code personnalisé pour un site, un Wi-Fi ou un email, avec vos propres couleurs, prêt à télécharger en quelques secondes.
+    </p>
+    <div class="flex flex-wrap justify-center items-center gap-3 mt-8 text-xs font-mono text-white/50">
+      <span class="flex items-center gap-1.5 border border-white/10 px-3 py-1.5 rounded-full"><ion-icon name="shield-checkmark-outline" class="text-volt"></ion-icon> 100% local</span>
+      <span class="flex items-center gap-1.5 border border-white/10 px-3 py-1.5 rounded-full"><ion-icon name="infinite-outline" class="text-amber"></ion-icon> Illimité</span>
+      <span class="flex items-center gap-1.5 border border-white/10 px-3 py-1.5 rounded-full"><ion-icon name="pricetag-outline" class="text-volt"></ion-icon> Gratuit</span>
+    </div>
+  </div>
+
+  <div class="bg-paper curve-mask h-14 relative z-10"></div>
+</section>
+
+<!-- ============ MAIN ============ -->
+<main class="bg-paper">
+
+  <!-- ============ OUTIL ============ -->
+  <section id="outil" class="max-w-6xl mx-auto px-6 lg:px-10 -mt-8 relative z-10 pb-24">
+    <div class="reveal-scale bg-white border border-black/5 rounded-5xl shadow-2xl p-6 sm:p-10">
+      <div class="grid lg:grid-cols-[1fr_320px] gap-10">
+
+        <!-- form panel -->
+        <div>
+          <!-- tabs -->
+          <div class="flex flex-wrap gap-2 mb-7">
+            <button data-tab="lien" class="tab-btn active cursor-pointer text-sm font-semibold px-5 py-2.5 rounded-full border border-black/10 flex items-center gap-2">
+              <ion-icon name="link-outline"></ion-icon> Lien
+            </button>
+            <button data-tab="texte" class="tab-btn cursor-pointer text-sm font-semibold px-5 py-2.5 rounded-full border border-black/10 flex items-center gap-2 text-mute">
+              <ion-icon name="chatbox-outline"></ion-icon> Texte
+            </button>
+            <button data-tab="wifi" class="tab-btn cursor-pointer text-sm font-semibold px-5 py-2.5 rounded-full border border-black/10 flex items-center gap-2 text-mute">
+              <ion-icon name="wifi-outline"></ion-icon> Wi-Fi
+            </button>
+            <button data-tab="email" class="tab-btn cursor-pointer text-sm font-semibold px-5 py-2.5 rounded-full border border-black/10 flex items-center gap-2 text-mute">
+              <ion-icon name="mail-outline"></ion-icon> Email
+            </button>
+          </div>
+
+          <!-- Lien -->
+          <div class="tab-panel" data-panel="lien">
+            <label class="text-sm font-semibold">Adresse du lien</label>
+            <input id="f-url" type="text" class="field-input mt-2" placeholder="https://votre-site.com" value="https://facilo.app">
+          </div>
+
+          <!-- Texte -->
+          <div class="tab-panel hidden" data-panel="texte">
+            <label class="text-sm font-semibold">Votre texte</label>
+            <textarea id="f-text" rows="4" class="field-input mt-2" placeholder="Écrivez le texte à encoder…">Merci de votre visite !</textarea>
+          </div>
+
+          <!-- Wi-Fi -->
+          <div class="tab-panel hidden space-y-4" data-panel="wifi">
+            <div>
+              <label class="text-sm font-semibold">Nom du réseau (SSID)</label>
+              <input id="f-ssid" type="text" class="field-input mt-2" placeholder="MonReseauWifi">
+            </div>
+            <div>
+              <label class="text-sm font-semibold">Mot de passe</label>
+              <input id="f-wifipass" type="text" class="field-input mt-2" placeholder="Laisser vide si réseau ouvert">
+            </div>
+            <div>
+              <label class="text-sm font-semibold">Sécurité</label>
+              <select id="f-wifitype" class="field-input mt-2">
+                <option value="WPA">WPA / WPA2</option>
+                <option value="WEP">WEP</option>
+                <option value="nopass">Réseau ouvert</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div class="tab-panel hidden space-y-4" data-panel="email">
+            <div>
+              <label class="text-sm font-semibold">Adresse email</label>
+              <input id="f-email" type="email" class="field-input mt-2" placeholder="contact@votre-site.com">
+            </div>
+            <div>
+              <label class="text-sm font-semibold">Sujet <span class="text-mute font-normal">(optionnel)</span></label>
+              <input id="f-subject" type="text" class="field-input mt-2" placeholder="Objet de l'email">
+            </div>
+          </div>
+
+          <!-- customization -->
+          <div class="mt-8 pt-8 border-t border-black/5">
+            <p class="font-display text-xl mb-5">Personnalisation</p>
+            <div class="flex flex-wrap items-center gap-6 mb-6">
+              <div class="flex items-center gap-3">
+                <input id="f-colordark" type="color" value="#10131a">
+                <span class="text-xs text-mute">Couleur du QR</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <input id="f-colorlight" type="color" value="#ffffff">
+                <span class="text-xs text-mute">Couleur de fond</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-sm font-semibold" for="f-size">Taille</label>
+              <span id="f-size-val" class="text-xs font-mono text-mute">260 px</span>
+            </div>
+            <input id="f-size" type="range" min="180" max="400" step="20" value="260" class="w-full cursor-pointer">
+
+            <div class="mt-6">
+              <label class="text-sm font-semibold">Niveau de correction d'erreur</label>
+              <select id="f-correction" class="field-input mt-2">
+                <option value="L">Bas — pour un usage écran</option>
+                <option value="M" selected>Moyen — usage courant</option>
+                <option value="Q">Élevé — impression</option>
+                <option value="H">Maximal — logo ou surface abîmée</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- preview -->
+        <div class="flex flex-col items-center">
+          <div class="bg-paperdim rounded-4xl p-6 flex items-center justify-center w-full">
+            <div id="qr-preview"></div>
+          </div>
+          <p class="text-xs font-mono text-mute mt-4 text-center">Aperçu mis à jour en temps réel</p>
+
+          <div class="flex flex-col gap-3 w-full mt-6">
+            <button id="download-btn" class="btn-fill cursor-pointer bg-ink text-white font-semibold px-6 py-3.5 rounded-full flex items-center justify-center gap-2">
+              <ion-icon name="download-outline"></ion-icon> Télécharger le PNG
+            </button>
+            <button id="copy-btn" class="btn-outline cursor-pointer border border-black/15 font-semibold px-6 py-3.5 rounded-full hover:bg-paperdim flex items-center justify-center gap-2">
+              <ion-icon name="copy-outline"></ion-icon> Copier le contenu encodé
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COMMENT ÇA MARCHE ============ -->
+  <section id="comment" class="bg-ink text-white py-28">
+    <div class="max-w-7xl mx-auto px-6 lg:px-10">
+      <div class="reveal mb-16 max-w-lg">
+        <span class="text-xs font-mono uppercase tracking-widest text-amber">Le principe</span>
+        <h2 class="font-display text-4xl sm:text-5xl mt-3">Trois étapes, zéro compte.</h2>
+      </div>
+      <div class="grid md:grid-cols-3 gap-10">
+        <div class="reveal">
+          <span class="font-display text-5xl text-white/15">01</span>
+          <h3 class="font-display text-2xl mt-5">Choisissez un type</h3>
+          <p class="text-white/55 mt-3">Lien, texte, Wi-Fi ou email : sélectionnez l'onglet qui correspond à votre besoin.</p>
+        </div>
+        <div class="reveal">
+          <span class="font-display text-5xl text-white/15">02</span>
+          <h3 class="font-display text-2xl mt-5">Personnalisez le rendu</h3>
+          <p class="text-white/55 mt-3">Ajustez les couleurs, la taille et le niveau de correction selon l'usage prévu.</p>
+        </div>
+        <div class="reveal">
+          <span class="font-display text-5xl text-white/15">03</span>
+          <h3 class="font-display text-2xl mt-5">Téléchargez le PNG</h3>
+          <p class="text-white/55 mt-3">Récupérez votre QR code en haute qualité, prêt à imprimer ou à partager.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+ 
+
+  <!-- ============ FAQ ============ -->
+  <section id="faq" class="bg-paperdim py-28">
+    <div class="max-w-3xl mx-auto px-6 lg:px-10">
+      <div class="reveal mb-12 text-center">
+        <span class="text-xs font-mono uppercase tracking-widest text-volt">FAQ</span>
+        <h2 class="font-display text-4xl sm:text-5xl mt-3">Questions fréquentes</h2>
+      </div>
+
+      <div class="space-y-4 reveal">
+        <details class="accordion-item bg-white rounded-3xl border border-black/5 p-6 cursor-pointer">
+          <summary class="flex items-center justify-between font-semibold cursor-pointer list-none">
+            Mes données sont-elles envoyées à un serveur ?
+            <ion-icon name="chevron-down-outline" class="chev text-mute"></ion-icon>
+          </summary>
+          <p class="text-mute text-sm mt-4">Non. Le QR code est entièrement généré dans votre navigateur. Le contenu que vous saisissez n'est ni transmis ni conservé par Facilo.</p>
+        </details>
+        <details class="accordion-item bg-white rounded-3xl border border-black/5 p-6 cursor-pointer">
+          <summary class="flex items-center justify-between font-semibold cursor-pointer list-none">
+            Le QR code Wi-Fi fonctionne-t-il avec tous les téléphones ?
+            <ion-icon name="chevron-down-outline" class="chev text-mute"></ion-icon>
+          </summary>
+          <p class="text-mute text-sm mt-4">La plupart des smartphones récents (iOS et Android) reconnaissent automatiquement ce format et proposent de rejoindre le réseau en un scan.</p>
+        </details>
+        <details class="accordion-item bg-white rounded-3xl border border-black/5 p-6 cursor-pointer">
+          <summary class="flex items-center justify-between font-semibold cursor-pointer list-none">
+            Puis-je changer les couleurs sans risquer de casser le QR code ?
+            <ion-icon name="chevron-down-outline" class="chev text-mute"></ion-icon>
+          </summary>
+          <p class="text-mute text-sm mt-4">Oui, tant que le contraste entre le motif et le fond reste suffisant. Évitez deux teintes trop proches en luminosité.</p>
+        </details>
+        <details class="accordion-item bg-white rounded-3xl border border-black/5 p-6 cursor-pointer">
+          <summary class="flex items-center justify-between font-semibold cursor-pointer list-none">
+            Y a-t-il une limite de caractères ?
+            <ion-icon name="chevron-down-outline" class="chev text-mute"></ion-icon>
+          </summary>
+          <p class="text-mute text-sm mt-4">Un QR code peut contenir jusqu'à quelques milliers de caractères, mais pour rester lisible facilement, privilégiez des contenus courts comme un lien plutôt qu'un long texte.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+ 
+  <!-- ============ CTA ============ -->
+  <section class="max-w-7xl mx-auto px-6 lg:px-10 pb-24">
+    <div class="reveal-scale relative bg-ink text-white rounded-5xl px-10 py-20 text-center overflow-hidden">
+      <div class="absolute -top-16 left-1/4 w-72 h-72 blob float-anim"></div>
+      <div class="relative z-10">
+        <h2 class="font-display text-4xl sm:text-5xl max-w-xl mx-auto leading-tight">Prêt à générer votre premier QR code ?</h2>
+        <p class="text-white/55 mt-5 max-w-md mx-auto">Aucune inscription. Aucune carte bancaire. Juste un outil qui fait son travail.</p>
+        <a href="#outil" class="btn-fill cursor-pointer inline-flex items-center gap-2 bg-white text-ink font-semibold px-8 py-4 rounded-full mt-9">
+          Utiliser l'outil <ion-icon name="arrow-forward-outline"></ion-icon>
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="bg-ink text-white/70 pt-20 pb-8">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-12 pb-16 border-b border-white/10">
+      <div class="lg:col-span-2">
+        <a href="#top" class="flex items-center gap-2 font-display text-lg font-semibold text-white cursor-pointer">
+          <span class="w-8 h-8 rounded-full bg-volt flex items-center justify-center">
+            <ion-icon name="flash" class="text-white text-base"></ion-icon>
+          </span>
+          IvoireTools
+        </a>
+        <p class="mt-5 max-w-xs text-sm">Des petits outils du quotidien, réunis au même endroit, pensés pour aller vite.</p>
+        <div class="flex items-center gap-3 mt-6">
+          <a href="mailto:alidoufranck@gmail.com"
+   class="cursor-pointer w-10 h-10 rounded-full border border-white/15 flex items-center justify-center hover:bg-white/10 transition">
+    <ion-icon name="mail-outline"></ion-icon>
+</a>
+          <a href="https://github.com/alidoufranck-ops" class="cursor-pointer w-10 h-10 rounded-full border border-white/15 flex items-center justify-center hover:bg-white/10 transition"><ion-icon name="logo-github"></ion-icon></a>
+          <a href="https://www.linkedin.com/in/alidou-franck-8abb083a9" class="cursor-pointer w-10 h-10 rounded-full border border-white/15 flex items-center justify-center hover:bg-white/10 transition"><ion-icon name="logo-linkedin"></ion-icon></a>
+        </div>
+      </div>
+     
+      <div>
+        <p class="text-white font-semibold mb-4 text-sm">Ressources</p>
+        <ul class="space-y-3 text-sm">
+          <li><a href="#comment" class="cursor-pointer hover:text-white transition">Comment ça marche</a></li>
+          <li><a href="#" class="cursor-pointer hover:text-white transition">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 text-xs text-white/40">
+      
+      
+    </div>
+  </div>
+</footer>
+
+
+<script>
+  // ---------- custom cursor ----------
+  const dot = document.getElementById('cur-dot');
+  const ring = document.getElementById('cur-ring');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  window.addEventListener('mousemove', (e) => {
+    mx = e.clientX; my = e.clientY;
+    dot.style.transform = `translate(${mx}px, ${my}px) translate(-50%,-50%)`;
+  });
+  (function loop(){
+    rx += (mx - rx) * 0.18;
+    ry += (my - ry) * 0.18;
+    ring.style.transform = `translate(${rx}px, ${ry}px) translate(-50%,-50%)`;
+    requestAnimationFrame(loop);
+  })();
+  document.querySelectorAll('a, button, .cursor-pointer, summary').forEach(el => {
+    el.addEventListener('mouseenter', () => ring.classList.add('grow'));
+    el.addEventListener('mouseleave', () => ring.classList.remove('grow'));
+  });
+  document.addEventListener('mouseleave', () => { dot.style.opacity = 0; ring.style.opacity = 0; });
+  document.addEventListener('mouseenter', () => { dot.style.opacity = 1; ring.style.opacity = 1; });
+
+  // ---------- scroll reveal ----------
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting){ entry.target.classList.add('in'); io.unobserve(entry.target); }
+    });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.reveal, .reveal-scale').forEach(el => io.observe(el));
+
+  // ================= OUTIL : QR CODE =================
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  const tabPanels = document.querySelectorAll('.tab-panel');
+  let activeTab = 'lien';
+
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeTab = btn.dataset.tab;
+      tabButtons.forEach(b => {
+        b.classList.toggle('active', b === btn);
+        b.classList.toggle('text-mute', b !== btn);
+      });
+      tabPanels.forEach(p => p.classList.toggle('hidden', p.dataset.panel !== activeTab));
+      generate();
+    });
+  });
+
+  const fUrl = document.getElementById('f-url');
+  const fText = document.getElementById('f-text');
+  const fSsid = document.getElementById('f-ssid');
+  const fWifipass = document.getElementById('f-wifipass');
+  const fWifitype = document.getElementById('f-wifitype');
+  const fEmail = document.getElementById('f-email');
+  const fSubject = document.getElementById('f-subject');
+  const fColorDark = document.getElementById('f-colordark');
+  const fColorLight = document.getElementById('f-colorlight');
+  const fSize = document.getElementById('f-size');
+  const fSizeVal = document.getElementById('f-size-val');
+  const fCorrection = document.getElementById('f-correction');
+  const previewEl = document.getElementById('qr-preview');
+  const downloadBtn = document.getElementById('download-btn');
+  const copyBtn = document.getElementById('copy-btn');
+
+  const correctionLevels = { L: QRCode.CorrectLevel.L, M: QRCode.CorrectLevel.M, Q: QRCode.CorrectLevel.Q, H: QRCode.CorrectLevel.H };
+
+  function buildContent(){
+    switch(activeTab){
+      case 'lien':
+        return (fUrl.value || 'https://facilo.app').trim();
+      case 'texte':
+        return (fText.value || ' ').trim() || ' ';
+      case 'wifi': {
+        const ssid = fSsid.value.trim() || 'MonReseauWifi';
+        const pass = fWifipass.value.trim();
+        const type = fWifitype.value;
+        if (type === 'nopass') return `WIFI:T:nopass;S:${ssid};;`;
+        return `WIFI:T:${type};S:${ssid};P:${pass};;`;
+      }
+      case 'email': {
+        const addr = fEmail.value.trim() || 'contact@facilo.app';
+        const subj = encodeURIComponent(fSubject.value.trim());
+        return subj ? `mailto:${addr}?subject=${subj}` : `mailto:${addr}`;
+      }
+      default:
+        return 'https://facilo.app';
+    }
+  }
+
+  let qr = null;
+  function generate(){
+    const content = buildContent();
+    const size = parseInt(fSize.value, 10);
+    previewEl.innerHTML = '';
+    qr = new QRCode(previewEl, {
+      text: content,
+      width: size,
+      height: size,
+      colorDark: fColorDark.value,
+      colorLight: fColorLight.value,
+      correctLevel: correctionLevels[fCorrection.value]
+    });
+  }
+
+  let debounceTimer;
+  function scheduleGenerate(){
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(generate, 220);
+  }
+
+  [fUrl, fText, fSsid, fWifipass, fEmail, fSubject].forEach(el => el && el.addEventListener('input', scheduleGenerate));
+  [fWifitype, fCorrection].forEach(el => el.addEventListener('change', generate));
+  [fColorDark, fColorLight].forEach(el => el.addEventListener('input', generate));
+  fSize.addEventListener('input', () => {
+    fSizeVal.textContent = fSize.value + ' px';
+    scheduleGenerate();
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    const canvas = previewEl.querySelector('canvas');
+    const img = previewEl.querySelector('img');
+    const dataUrl = canvas ? canvas.toDataURL('image/png') : (img ? img.src : null);
+    if (!dataUrl) return;
+    const a = document.createElement('a');
+    a.href = dataUrl; a.download = 'facilo-qrcode.png';
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+
+  copyBtn.addEventListener('click', async () => {
+    const content = buildContent();
+    try {
+      await navigator.clipboard.writeText(content);
+      const original = copyBtn.innerHTML;
+      copyBtn.innerHTML = '<ion-icon name="checkmark-outline"></ion-icon> Copié !';
+      setTimeout(() => { copyBtn.innerHTML = original; }, 1600);
+    } catch(err){ /* clipboard unavailable, silently ignore */ }
+  });
+
+  generate();
+</script>
+
+</body>
+</html>

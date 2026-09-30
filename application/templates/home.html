@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IvoireTools — Des outils simples pour aller vite</title>
+<meta name="description" content="Suppression de fond, QR codes, compression d'image et plus : des petits outils gratuits, rapides et sans inscription.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=satoshi@400,500,600,700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: '#10131A',
+          inkline: '#1B2029',
+          paper: '#F6F4EF',
+          paperdim: '#EDEAE2',
+          volt: '#3D5AFE',
+          voltdeep: '#2A3FCC',
+          amber: '#FFB74A',
+          mute: '#8B93A7',
+        },
+        fontFamily: {
+          display: ['"Clash Display"', 'sans-serif'],
+          body: ['Satoshi', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'monospace'],
+        },
+        borderRadius: {
+          '4xl': '2rem',
+          '5xl': '2.5rem',
+        }
+      }
+    }
+  }
+</script>
+
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+<style>
+  :root{
+    --volt: #3D5AFE;
+    --amber: #FFB74A;
+    --ink: #10131A;
+  }
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:'Satoshi', sans-serif;
+    background:#F6F4EF;
+    overflow-x:hidden;
+  }
+
+  /* ---------- custom cursor ---------- */
+  @media (pointer:fine){
+    body{cursor:none;}
+    a, button, .cursor-pointer{cursor:none;}
+  }
+  #cur-dot, #cur-ring{
+    position:fixed; top:0; left:0; pointer-events:none; z-index:9999;
+    transform:translate(-50%,-50%);
+    will-change:transform;
+  }
+  #cur-dot{
+    width:7px; height:7px; border-radius:50%;
+    background:var(--volt);
+    transition:opacity .2s ease;
+  }
+  #cur-ring{
+    width:38px; height:38px; border-radius:50%;
+    border:1.5px solid rgba(61,90,254,.55);
+    transition:width .25s ease,height .25s ease,background .25s ease,border-color .25s ease,opacity .2s ease;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:9px; letter-spacing:.05em; color:#fff;
+    text-transform:uppercase;
+    white-space:nowrap;
+  }
+  #cur-ring.grow{
+    width:84px; height:84px;
+    background:var(--volt);
+    border-color:var(--volt);
+  }
+  #cur-ring span{opacity:0; transition:opacity .2s ease .05s;}
+  #cur-ring.grow span{opacity:1;}
+  @media (pointer:coarse){
+    #cur-dot,#cur-ring{display:none;}
+  }
+
+  /* ---------- reveal on scroll ---------- */
+  .reveal{opacity:0; transform:translateY(28px); transition:opacity .7s ease, transform .7s ease;}
+  .reveal.in{opacity:1; transform:translateY(0);}
+  .reveal-scale{opacity:0; transform:scale(.92); transition:opacity .7s ease, transform .7s ease;}
+  .reveal-scale.in{opacity:1; transform:scale(1);}
+
+  @media (prefers-reduced-motion: reduce){
+    .reveal, .reveal-scale{opacity:1 !important; transform:none !important; transition:none !important;}
+    .float-anim, .float-anim-slow, .marquee-track{animation:none !important;}
+  }
+
+  /* ---------- floating blobs / mockup ---------- */
+  .float-anim{ animation: floaty 6s ease-in-out infinite; }
+  .float-anim-slow{ animation: floaty 9s ease-in-out infinite; }
+  @keyframes floaty{
+    0%,100%{ transform: translateY(0px) rotate(var(--rot,0deg)); }
+    50%{ transform: translateY(-16px) rotate(var(--rot,0deg)); }
+  }
+
+  .blob{
+    filter: blur(60px);
+    background: radial-gradient(circle at 30% 30%, rgba(61,90,254,.55), transparent 60%),
+                radial-gradient(circle at 70% 70%, rgba(255,183,74,.35), transparent 60%);
+  }
+
+  /* ---------- marquee ---------- */
+  .marquee-track{
+    display:flex; gap:2.5rem; width:max-content;
+    animation: marquee 26s linear infinite;
+  }
+  .marquee:hover .marquee-track{ animation-play-state: paused; }
+  @keyframes marquee{
+    from{ transform: translateX(0); }
+    to{ transform: translateX(-50%); }
+  }
+
+  /* ---------- carousel ---------- */
+  .carousel{ scroll-snap-type: x mandatory; scrollbar-width:none; -ms-overflow-style:none; }
+  .carousel::-webkit-scrollbar{ display:none; }
+  .carousel > *{ scroll-snap-align:start; }
+
+  .card-tool{ transition: transform .35s ease, box-shadow .35s ease, border-color .35s ease; }
+  .card-tool:hover{ transform: translateY(-8px); box-shadow: 0 24px 48px -20px rgba(16,19,26,.35); border-color: rgba(61,90,254,.4); }
+
+  .btn-fill{ transition: transform .25s ease, background .25s ease; }
+  .btn-fill:hover{ transform: translateY(-2px); }
+  .btn-outline{ transition: transform .25s ease, background .25s ease, color .25s ease; }
+  .btn-outline:hover{ transform: translateY(-2px); }
+
+  .curve-mask{
+    border-radius: 2.5rem 2.5rem 0 0;
+  }
+
+  .quote-card{ min-width: 320px; }
+
+  ::selection{ background: var(--volt); color: #fff; }
+</style>
+</head>
+
+<body class="text-ink antialiased">
+
+<!-- custom cursor -->
+<div id="cur-dot"></div>
+<div id="cur-ring"><span>Voir</span></div>
+
+<!-- ============ NAV ============ -->
+<header class="fixed top-0 left-0 right-0 z-50">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 pt-5">
+    <nav class="flex items-center justify-between bg-ink/90 backdrop-blur-md text-white rounded-full pl-6 pr-2.5 py-2.5 border border-white/10">
+      <a href="#top" class="flex items-center gap-2 font-display text-lg font-semibold cursor-pointer">
+        <span class="w-8 h-8 rounded-full bg-volt flex items-center justify-center">
+          <ion-icon name="flash" class="text-white text-base"></ion-icon>
+        </span>
+        IvoireTools
+      </a>
+      <div class="hidden md:flex items-center gap-8 text-sm text-white/70 font-medium">
+        <a href="#outils" class="hover:text-white transition cursor-pointer">Outils</a>
+        <a href="#comment" class="hover:text-white transition cursor-pointer">Comment ça marche</a>
+        <a href="#avis" class="hover:text-white transition cursor-pointer">Avis</a>
+      </div>
+      <a href="#outils" class="btn-fill bg-white text-ink text-sm font-semibold px-5 py-2.5 rounded-full cursor-pointer">
+        Commencer
+      </a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section id="top" class="relative bg-ink text-white pt-32 pb-0 overflow-hidden">
+  <div class="absolute -top-24 -left-24 w-[26rem] h-[26rem] blob float-anim-slow"></div>
+  <div class="absolute top-40 right-0 w-[22rem] h-[22rem] blob float-anim" style="--rot:2deg"></div>
+
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 relative grid lg:grid-cols-2 gap-16 items-center pb-28">
+    <!-- left: homage to onboarding screen -->
+    <div class="relative z-10">
+     
+      <h1 class="font-display text-5xl sm:text-6xl leading-[1.03] mt-7">
+        Des tâches du quotidien,
+        <span class="text-volt">réglées en un clic.</span>
+      </h1>
+      <p class="text-white/60 text-lg mt-6 max-w-md">
+        Fond d'image, QR code, compression, ect ... IvoireTools réunit les petits outils dont vous avez besoin tous les jours, sans compte et sans logiciel à installer.
+      </p>
+      <div class="flex flex-wrap items-center gap-4 mt-9">
+        <a href="#outils" class="btn-fill cursor-pointer bg-white text-ink font-semibold px-7 py-3.5 rounded-full">
+          Commencer gratuitement
+        </a>
+        <a href="#comment" class="btn-outline cursor-pointer border border-white/25 text-white font-semibold px-7 py-3.5 rounded-full hover:bg-white/10">
+          Voir comment ça marche
+        </a>
+      </div>
+      
+    </div>
+
+   
+  <div ></div>
+</section>
+
+<!-- ============ MAIN ============ -->
+<main class="bg-paper">
+
+  <!-- marquee strip -->
+  <section class="border-b border-black/5 py-6">
+    <div class="marquee overflow-hidden">
+      <div class="marquee-track text-mute font-mono text-xs uppercase tracking-[0.2em]">
+        <span class="flex items-center gap-3 px-4">Suppression de fond <ion-icon name="ellipse" class="text-[6px] text-amber"></ion-icon></span>
+        <span class="flex items-center gap-3 px-4">QR Code <ion-icon name="ellipse" class="text-[6px] text-amber"></ion-icon></span>
+        <span class="flex items-center gap-3 px-4"># <ion-icon name="ellipse" class="text-[6px] text-amber"></ion-icon></span>
+        <span class="flex items-center gap-3 px-4">#<ion-icon name="ellipse" class="text-[6px] text-amber"></ion-icon></span>
+        <span class="flex items-center gap-3 px-4"># <ion-icon name="ellipse" class="text-[6px] text-amber"></ion-icon></span>
+        <span class="flex items-center gap-3 px-4"># <ion-icon name="ellipse" class="text-[6px] text-amber"></ion-icon></span>
+        <!-- duplicate for seamless loop -->
+        <span class="flex items-center gap-3 px-4">Suppression de fond <ion-icon name="ellipse" class="text-[6px] text-amber"></ion-icon></span>
+        <span class="flex items-center gap-3 px-4">QR Code <ion-icon name="ellipse" class="text-[6px] text-amber"></ion-icon></span>
+        <span class="flex items-center gap-3 px-4"># <ion-icon name="ellipse" class="text-[6px] text-amber"></ion-icon></span>
+        <span class="flex items-center gap-3 px-4"># <ion-icon name="ellipse" class="text-[6px] text-amber"></ion-icon></span>
+        <span class="flex items-center gap-3 px-4">#<ion-icon name="ellipse" class="text-[6px] text-amber"></ion-icon></span>
+        <span class="flex items-center gap-3 px-4"># <ion-icon name="ellipse" class="text-[6px] text-amber"></ion-icon></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SERVICES CAROUSEL ============ -->
+  <section id="outils" class="max-w-7xl mx-auto px-6 lg:px-10 py-24">
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-12 reveal">
+      <div>
+        <span class="text-xs font-mono uppercase tracking-widest text-volt">Nos outils</span>
+        <h2 class="font-display text-4xl sm:text-5xl mt-3"> Des outils. Une seule adresse.</h2>
+      </div>
+      <p class="text-mute max-w-sm">Glissez pour explorer — chaque outil s'ouvre en quelques secondes, directement dans votre navigateur.</p>
+    </div>
+
+    <div class="flex items-center gap-3 mb-6 reveal">
+      <button id="car-prev" class="cursor-pointer w-11 h-11 rounded-full border border-black/10 flex items-center justify-center hover:bg-ink hover:text-white transition">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+      <button id="car-next" class="cursor-pointer w-11 h-11 rounded-full border border-black/10 flex items-center justify-center hover:bg-ink hover:text-white transition">
+        <ion-icon name="arrow-forward-outline"></ion-icon>
+      </button>
+    </div>
+
+    <div id="carousel" class="carousel flex gap-6 overflow-x-auto pb-4 -mx-6 px-6 lg:mx-0 lg:px-0">
+
+       <a href="{% url 'emove' %}">
+        <article class="card-tool cursor-pointer shrink-0 w-[280px] bg-white border border-black/5 rounded-4xl p-7">
+        <div class="flex items-center justify-between">
+          <span class="w-11 h-11 rounded-full bg-volt/15 text-volt flex items-center justify-center text-lg"><ion-icon name="cut-outline"></ion-icon></span>
+          <span class="text-[10px] font-mono bg-paperdim px-2.5 py-1 rounded-full">Gratuit</span>
+        </div>
+        <h3 class="font-display text-xl mt-6"> Suppression de fond</h3>
+        <p class="text-sm text-mute mt-2">Détourez vos photos et exportez-les en PNG transparent. Prennez facilement pour l'integrer dans votre projet</p>
+      </article>
+      </a>
+      <a href="{% url 'code' %}">
+      <article class="card-tool cursor-pointer shrink-0 w-[280px] bg-white border border-black/5 rounded-4xl p-7">
+        <div class="flex items-center justify-between">
+          <span class="w-11 h-11 rounded-full bg-amber/15 text-amber flex items-center justify-center text-lg"><ion-icon name="qr-code-outline"></ion-icon></span>
+          <span class="text-[10px] font-mono bg-paperdim px-2.5 py-1 rounded-full">Gratuit</span>
+        </div>
+        <h3 class="font-display text-xl mt-6">Générateur de QR Code</h3>
+        <p class="text-sm text-mute mt-2">Transformez un lien, un texte ou un Wi-Fi en QR code prêt à imprimer.</p>
+      </article>
+      </a>
+      <a href="{% url  'son' %}">
+      <article class="card-tool cursor-pointer shrink-0 w-[280px] bg-white border border-black/5 rounded-4xl p-7">
+        <div class="flex items-center justify-between">
+          <span class="w-11 h-11 rounded-full bg-volt/10 text-volt flex items-center justify-center text-lg"><ion-icon name="contract-outline"></ion-icon></span>
+          <span class="text-[10px] font-mono bg-paperdim px-2.5 py-1 rounded-full">Gratuit</span>
+        </div>
+        <h3 class="font-display text-xl mt-6">Transcription Vocal</h3>
+        <p class="text-sm text-mute mt-2">Facilite votre prise de note ; parler sans crainte on s'occuppe de note vous n'aurai qu'a copier </p>
+      </article>
+      </a>
+
+      <a href="{% url 'convertisseur' %}">
+      <article class="card-tool cursor-pointer shrink-0 w-[280px] bg-white border border-black/5 rounded-4xl p-7">
+        <div class="flex items-center justify-between">
+          <span class="w-11 h-11 rounded-full bg-amber/15 text-amber flex items-center justify-center text-lg"><ion-icon name="swap-horizontal-outline"></ion-icon></span>
+          <span class="text-[10px] font-mono bg-paperdim px-2.5 py-1 rounded-full">Gratuit</span>
+        </div>
+        <h3 class="font-display text-xl mt-6">Conversion de fichiers</h3>
+        <p class="text-sm text-mute mt-2">JPG, PNG, WebP, PDF… convertissez en un glisser-déposer.</p>
+      </article>
+      </a>
+
+      <article class="card-tool cursor-pointer shrink-0 w-[280px] bg-white border border-black/5 rounded-4xl p-7">
+        <div class="flex items-center justify-between">
+          <span class="w-11 h-11 rounded-full bg-volt/10 text-volt flex items-center justify-center text-lg"><ion-icon name="resize-outline"></ion-icon></span>
+          <span class="text-[10px] font-mono bg-paperdim px-2.5 py-1 rounded-full">Gratuit</span>
+        </div>
+        <h3 class="font-display text-xl mt-6">Redimensionnement</h3>
+        <p class="text-sm text-mute mt-2">Adaptez une image aux bonnes dimensions en un instant.</p>
+      </article>
+
+      <article class="card-tool cursor-pointer shrink-0 w-[280px] bg-white border border-black/5 rounded-4xl p-7">
+        <div class="flex items-center justify-between">
+          <span class="w-11 h-11 rounded-full bg-amber/15 text-amber flex items-center justify-center text-lg"><ion-icon name="key-outline"></ion-icon></span>
+          <span class="text-[10px] font-mono bg-paperdim px-2.5 py-1 rounded-full">Gratuit</span>
+        </div>
+        <h3 class="font-display text-xl mt-6">Mots de passe</h3>
+        <p class="text-sm text-mute mt-2">Générez des mots de passe robustes, faciles à retenir ou aléatoires.</p>
+      </article>
+
+      <article class="card-tool cursor-pointer shrink-0 w-[280px] bg-white border border-black/5 rounded-4xl p-7">
+        <div class="flex items-center justify-between">
+          <span class="w-11 h-11 rounded-full bg-volt/10 text-volt flex items-center justify-center text-lg"><ion-icon name="scan-outline"></ion-icon></span>
+          <span class="text-[10px] font-mono bg-paperdim px-2.5 py-1 rounded-full">Gratuit</span>
+        </div>
+        <h3 class="font-display text-xl mt-6">Extraction de texte (OCR)</h3>
+        <p class="text-sm text-mute mt-2">Récupérez le texte contenu dans une image ou un scan.</p>
+      </article>
+
+      <article class="card-tool cursor-pointer shrink-0 w-[280px] bg-white border border-black/5 rounded-4xl p-7">
+        <div class="flex items-center justify-between">
+          <span class="w-11 h-11 rounded-full bg-amber/15 text-amber flex items-center justify-center text-lg"><ion-icon name="document-outline"></ion-icon></span>
+          <span class="text-[10px] font-mono bg-paperdim px-2.5 py-1 rounded-full">Gratuit</span>
+        </div>
+        <h3 class="font-display text-xl mt-6">Fusion de PDF</h3>
+        <p class="text-sm text-mute mt-2">Combinez plusieurs documents en un seul fichier PDF propre.</p>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ============ COMMENT ÇA MARCHE ============ -->
+  <section id="comment" class="bg-ink text-white py-28">
+    <div class="max-w-7xl mx-auto px-6 lg:px-10">
+      <div class="reveal mb-16 max-w-lg">
+        <span class="text-xs font-mono uppercase tracking-widest text-amber">Le principe</span>
+        <h2 class="font-display text-4xl sm:text-5xl mt-3">Trois étapes, zéro compte.</h2>
+      </div>
+      <div class="grid md:grid-cols-3 gap-10">
+        <div class="reveal">
+          <span class="font-display text-5xl text-white/15">01</span>
+          <h3 class="font-display text-2xl mt-5">Choisissez un outil</h3>
+          <p class="text-white/55 mt-3">Parcourez la liste ou tapez directement ce que vous cherchez dans la recherche.</p>
+        </div>
+        <div class="reveal">
+          <span class="font-display text-5xl text-white/15">02</span>
+          <h3 class="font-display text-2xl mt-5">Déposez votre fichier</h3>
+          <p class="text-white/55 mt-3">Glissez une image, un lien ou un document. Tout se passe dans votre navigateur.</p>
+        </div>
+        <div class="reveal">
+          <span class="font-display text-5xl text-white/15">03</span>
+          <h3 class="font-display text-2xl mt-5">Récupérez le résultat</h3>
+          <p class="text-white/55 mt-3">Téléchargez le fichier final, prêt à l'emploi, sans filigrane ni limite cachée.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FEATURE HIGHLIGHT ============ -->
+  <section class="max-w-7xl mx-auto px-6 lg:px-10 py-28 grid lg:grid-cols-2 gap-16 items-center">
+    <div class="reveal-scale order-2 lg:order-1">
+      <div class="relative bg-white rounded-4xl border border-black/5 p-8 shadow-xl">
+        <div class="grid grid-cols-2 gap-4 items-center">
+          <div class="rounded-3xl overflow-hidden aspect-square bg-gradient-to-br from-paperdim to-white flex items-center justify-center border border-black/5">
+            <span class="text-xs font-mono text-mute">AVANT</span>
+          </div>
+          <div class="rounded-3xl overflow-hidden aspect-square bg-gradient-to-br from-volt/10 to-amber/10 flex items-center justify-center border border-volt/20">
+            <span class="text-xs font-mono text-volt">APRÈS</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 mt-6 text-xs font-mono text-mute">
+          <ion-icon name="time-outline"></ion-icon> Traité en 2,3 secondes
+        </div>
+      </div>
+    </div>
+    <div class="order-1 lg:order-2 reveal">
+      <span class="text-xs font-mono uppercase tracking-widest text-volt">Outil vedette</span>
+      <h2 class="font-display text-4xl sm:text-5xl mt-3 leading-tight">Un fond blanc,<br>en un glisser-déposer.</h2>
+      <p class="text-mute text-lg mt-6 max-w-md">Notre détourage automatique reconnaît sujets, produits et portraits pour livrer un fond transparent net, sans retouche manuelle.</p>
+      <ul class="mt-8 space-y-4">
+        <li class="flex items-center gap-3"><ion-icon name="checkmark-circle" class="text-volt text-xl"></ion-icon> Export PNG haute définition</li>
+        <li class="flex items-center gap-3"><ion-icon name="checkmark-circle" class="text-volt text-xl"></ion-icon> Traitement en local, rien n'est stocké</li>
+        <li class="flex items-center gap-3"><ion-icon name="checkmark-circle" class="text-volt text-xl"></ion-icon> Illimité, sans filigrane</li>
+      </ul>
+      <a href="#outils" class="btn-fill cursor-pointer inline-flex items-center gap-2 bg-ink text-white font-semibold px-7 py-3.5 rounded-full mt-9">
+        Essayer maintenant <ion-icon name="arrow-forward-outline"></ion-icon>
+      </a>
+    </div>
+  </section>
+
+ 
+
+  <!-- ============ CTA BANNER ============ -->
+  <section class="max-w-7xl mx-auto px-6 lg:px-10 py-24">
+    <div class="reveal-scale relative bg-ink text-white rounded-5xl px-10 py-20 text-center overflow-hidden">
+      <div class="absolute -top-16 left-1/4 w-72 h-72 blob float-anim"></div>
+      <div class="relative z-10">
+        <h2 class="font-display text-4xl sm:text-5xl max-w-xl mx-auto leading-tight">Le bon outil, exactement quand vous en avez besoin.</h2>
+        <p class="text-white/55 mt-5 max-w-md mx-auto">Aucune inscription. Aucune carte bancaire. Juste un outil qui fait son travail.</p>
+        <a href="#outils" class="btn-fill cursor-pointer inline-flex items-center gap-2 bg-white text-ink font-semibold px-8 py-4 rounded-full mt-9">
+          Découvrir les outils <ion-icon name="arrow-forward-outline"></ion-icon>
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="bg-ink text-white/70 pt-20 pb-8">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-12 pb-16 border-b border-white/10">
+      <div class="lg:col-span-2">
+        <a href="#top" class="flex items-center gap-2 font-display text-lg font-semibold text-white cursor-pointer">
+          <span class="w-8 h-8 rounded-full bg-volt flex items-center justify-center">
+            <ion-icon name="flash" class="text-white text-base"></ion-icon>
+          </span>
+          IvoireTools
+        </a>
+        <p class="mt-5 max-w-xs text-sm">Des petits outils du quotidien, réunis au même endroit, pensés pour aller vite.</p>
+        <div class="flex items-center gap-3 mt-6">
+          <a href="mailto:alidoufranck@gmail.com"
+   class="cursor-pointer w-10 h-10 rounded-full border border-white/15 flex items-center justify-center hover:bg-white/10 transition">
+    <ion-icon name="mail-outline"></ion-icon>
+</a>
+          <a href="https://github.com/alidoufranck-ops" class="cursor-pointer w-10 h-10 rounded-full border border-white/15 flex items-center justify-center hover:bg-white/10 transition"><ion-icon name="logo-github"></ion-icon></a>
+          <a href="https://www.linkedin.com/in/alidou-franck-8abb083a9" class="cursor-pointer w-10 h-10 rounded-full border border-white/15 flex items-center justify-center hover:bg-white/10 transition"><ion-icon name="logo-linkedin"></ion-icon></a>
+        </div>
+      </div>
+     
+      <div>
+        <p class="text-white font-semibold mb-4 text-sm">Ressources</p>
+        <ul class="space-y-3 text-sm">
+          <li><a href="#comment" class="cursor-pointer hover:text-white transition">Comment ça marche</a></li>
+          <li><a href="#" class="cursor-pointer hover:text-white transition">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 text-xs text-white/40">
+      
+      
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ---------- custom cursor ----------
+  const dot = document.getElementById('cur-dot');
+  const ring = document.getElementById('cur-ring');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  window.addEventListener('mousemove', (e) => {
+    mx = e.clientX; my = e.clientY;
+    dot.style.transform = `translate(${mx}px, ${my}px) translate(-50%,-50%)`;
+  });
+  function loop(){
+    rx += (mx - rx) * 0.18;
+    ry += (my - ry) * 0.18;
+    ring.style.transform = `translate(${rx}px, ${ry}px) translate(-50%,-50%)`;
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  document.querySelectorAll('a, button, .cursor-pointer').forEach(el => {
+    el.addEventListener('mouseenter', () => ring.classList.add('grow'));
+    el.addEventListener('mouseleave', () => ring.classList.remove('grow'));
+  });
+  document.addEventListener('mouseleave', () => { dot.style.opacity = 0; ring.style.opacity = 0; });
+  document.addEventListener('mouseenter', () => { dot.style.opacity = 1; ring.style.opacity = 1; });
+
+  // ---------- scroll reveal ----------
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting){
+        entry.target.classList.add('in');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.reveal, .reveal-scale').forEach(el => io.observe(el));
+
+  // ---------- carousel controls ----------
+  const carousel = document.getElementById('carousel');
+  const cardWidth = 280 + 24; // width + gap
+  document.getElementById('car-next').addEventListener('click', () => {
+    carousel.scrollBy({ left: cardWidth * 2, behavior: 'smooth' });
+  });
+  document.getElementById('car-prev').addEventListener('click', () => {
+    carousel.scrollBy({ left: -cardWidth * 2, behavior: 'smooth' });
+  });
+</script>
+
+</body>
+</html>
