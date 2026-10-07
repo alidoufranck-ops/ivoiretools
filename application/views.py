@@ -6,7 +6,8 @@ from django.core.files.base import ContentFile  # Créer un fichier à partir de
 from .models import table  # Importer notre modèle
 
 from rembg import remove  # Supprimer l'arrière-plan d'une image
-
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
 import requests  # Télécharger une image à partir d'une URL
 # Create your views here.
 def acceuil (request):
@@ -16,7 +17,7 @@ from django.shortcuts import render
 from django.core.files.base import ContentFile
 import requests
 import rembg  # Assurez-vous que cette importation est bien présente en haut
-
+@login_required
 def emove(request):  
     # 1. Récupère TOUTES les images pour l'historique (accessible partout dans la fonction)
     images_liste = table.objects.all().order_by("-id")
@@ -67,15 +68,15 @@ def emove(request):
     
     # Appel en GET (affichage simple de la page)
     return render(request, "rmbg.html", {"images": images_liste})
-
+@login_required
 def code (requets):
     return render (requets , 'qr.html')
-
+@login_required
 def son (request):
     return render (request, 'vocal.html')
 
 
-
+@login_required
 def convertisseur(request):
     return render(request, 'convertisseur.html')
 """
@@ -112,12 +113,12 @@ from django.views.decorators.http import require_http_methods
 import speech_recognition as sr
 from pydub import AudioSegment
 
-
+@login_required
 def son(request):
     """Affiche la page de l'outil de transcription vocale."""
     return render(request, "vocal.html")
 
-
+@login_required
 @require_http_methods(["POST"])
 def transcription(request):
     """

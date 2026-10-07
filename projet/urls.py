@@ -15,19 +15,22 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path,include
 from application import views
 from django.conf import settings
 from django.conf.urls.static import static
-
+from authentification.views import connexion_view # On importe la vue directement
 urlpatterns = [
      path('admin/', admin.site.urls),
-    path ('',views.acceuil , name = 'acceuil' ),
+     path('', connexion_view, name='connexion_accueil'), 
+    path ('home/',views.acceuil , name = 'acceuil' ),
     path ('remove/', views.emove , name = 'emove'),
     path ('code/', views.code , name = 'code'),
     path( 'son/', views.son , name = 'son'),
     path("transcription/", views.transcription, name="transcription"),
     path("convertisseur/", views.convertisseur, name="convertisseur"),
+     # On inclut proprement les URLs de notre nouvelle application
+    path('auth/', include('authentification.urls')), 
 
 ]
 if settings.DEBUG:

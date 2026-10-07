@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Facilo — Inscription</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=satoshi@400,500,600,700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: '#10131A', inkline: '#1B2029',
+          paper: '#F6F4EF', paperdim: '#EDEAE2',
+          volt: '#3D5AFE', voltdeep: '#2A3FCC',
+          amber: '#FFB74A', mute: '#8B93A7',
+        },
+        fontFamily: {
+          display: ['"Clash Display"', 'sans-serif'],
+          body: ['Satoshi', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'monospace'],
+        },
+        borderRadius: { '4xl': '2rem', '5xl': '2.5rem' }
+      }
+    }
+  }
+</script>
+
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+<style>
+  :root{ --volt:#3D5AFE; --amber:#FFB74A; --ink:#10131A; }
+  html{ scroll-behavior:smooth; }
+  body{ font-family:'Satoshi', sans-serif; overflow-x:hidden; }
+
+  /* ---------- curseur personnalisé (identique à l'accueil) ---------- */
+  @media (pointer:fine){ body{cursor:none;} a, button{cursor:none;} }
+  #cur-dot, #cur-ring{ position:fixed; top:0; left:0; pointer-events:none; z-index:9999; transform:translate(-50%,-50%); will-change:transform; }
+  #cur-dot{ width:7px; height:7px; border-radius:50%; background:var(--volt); transition:opacity .2s ease; }
+  #cur-ring{ width:38px; height:38px; border-radius:50%; border:1.5px solid rgba(61,90,254,.55);
+    transition:width .25s ease,height .25s ease,background .25s ease,border-color .25s ease,opacity .2s ease; }
+  #cur-ring.grow{ width:84px; height:84px; background:var(--volt); border-color:var(--volt); }
+  @media (pointer:coarse){ #cur-dot,#cur-ring{display:none;} }
+
+  /* ---------- blobs et animation ---------- */
+  .blob{ filter:blur(60px);
+    background: radial-gradient(circle at 30% 30%, rgba(61,90,254,.55), transparent 60%),
+                radial-gradient(circle at 70% 70%, rgba(255,183,74,.35), transparent 60%); }
+  .float-anim{ animation:floaty 6s ease-in-out infinite; }
+  .float-anim-slow{ animation:floaty 9s ease-in-out infinite; }
+  @keyframes floaty{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-16px)} }
+  @media (prefers-reduced-motion: reduce){ .float-anim,.float-anim-slow{animation:none !important;} }
+
+  .btn-fill{ transition:transform .25s ease, background .25s ease; }
+  .btn-fill:hover{ transform:translateY(-2px); }
+  ::selection{ background:var(--volt); color:#fff; }
+
+  /* ---------- champs générés par Django ---------- */
+  .auth-form input:not([type=checkbox]):not([type=radio]):not([type=hidden]),
+  .auth-form select,
+  .auth-form textarea{
+    width:100%; padding:.85rem 1.1rem; font-size:1rem; font-family:inherit;
+    color:#10131A; background:#F6F4EF;
+    border:1.5px solid rgba(16,19,26,.12); border-radius:1rem;
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .auth-form input:focus, .auth-form select:focus, .auth-form textarea:focus{
+    outline:none; background:#fff; border-color:#3D5AFE;
+    box-shadow:0 0 0 4px rgba(61,90,254,.15);
+  }
+  .auth-form .help-text ul{ margin:.4rem 0 0; padding-left:1.1rem; list-style:disc; }
+  .auth-form .errorlist{ list-style:none; margin:0; padding:0; }
+</style>
+</head>
+
+<body class="bg-ink text-white antialiased min-h-screen relative">
+
+<!-- curseur -->
+<div id="cur-dot"></div>
+<div id="cur-ring"></div>
+
+<!-- blobs de fond -->
+<div class="absolute -top-24 -left-24 w-[26rem] h-[26rem] blob float-anim-slow pointer-events-none"></div>
+<div class="absolute bottom-0 right-0 w-[22rem] h-[22rem] blob float-anim pointer-events-none"></div>
+
+<!-- NAV -->
+<header class="relative z-20">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 pt-5">
+    <nav class="flex items-center justify-between bg-ink/90 backdrop-blur-md rounded-full pl-6 pr-2.5 py-2.5 border border-white/10">
+      <a href="/" class="flex items-center gap-2 font-display text-lg font-semibold">
+        <span class="w-8 h-8 rounded-full bg-volt flex items-center justify-center">
+          <ion-icon name="flash" class="text-white text-base"></ion-icon>
+        </span>
+        Facilo
+      </a>
+      <a href="{% url 'connexion' %}" class="btn-fill bg-white text-ink text-sm font-semibold px-5 py-2.5 rounded-full">
+        Se connecter
+      </a>
+    </nav>
+  </div>
+</header>
+
+<!-- CARTE D'INSCRIPTION -->
+<main class="relative z-10 flex items-center justify-center px-6 py-12">
+  <div class="w-full max-w-md bg-paper text-ink rounded-5xl p-8 sm:p-10 shadow-2xl">
+
+    <span class="text-xs font-mono uppercase tracking-widest text-volt">Inscription</span>
+    <h1 class="font-display text-3xl sm:text-4xl leading-tight mt-3">Créer un compte Facilo</h1>
+    <p class="text-mute mt-3">Quelques secondes suffisent pour accéder à tous vos outils.</p>
+
+    <form method="POST" class="auth-form mt-8">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="mb-5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      {% for field in form %}
+        <div class="mb-5">
+          <label for="{{ field.id_for_label }}" class="block text-xs font-mono uppercase tracking-widest text-mute mb-2">
+            {{ field.label }}
+          </label>
+          {{ field }}
+          {% if field.help_text %}
+            <small class="help-text block text-xs text-mute mt-2">{{ field.help_text|safe }}</small>
+          {% endif %}
+          {% for error in field.errors %}
+            <small class="block text-xs text-red-600 mt-2">{{ error }}</small>
+          {% endfor %}
+        </div>
+      {% endfor %}
+
+      <button type="submit" class="btn-fill w-full bg-ink text-white font-semibold px-7 py-3.5 rounded-full hover:bg-volt transition mt-2 inline-flex items-center justify-center gap-2">
+        S'inscrire <ion-icon name="arrow-forward-outline"></ion-icon>
+      </button>
+    </form>
+
+    <p class="text-center text-sm text-mute mt-7">
+      Déjà inscrit ?
+      <a href="{% url 'connexion' %}" class="text-volt font-semibold hover:underline">Connectez-vous ici</a>
+    </p>
+  </div>
+</main>
+
+<script>
+  // ---------- curseur personnalisé ----------
+  const dot = document.getElementById('cur-dot');
+  const ring = document.getElementById('cur-ring');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  window.addEventListener('mousemove', (e) => {
+    mx = e.clientX; my = e.clientY;
+    dot.style.transform = `translate(${mx}px, ${my}px) translate(-50%,-50%)`;
+  });
+  function loop(){
+    rx += (mx - rx) * 0.18; ry += (my - ry) * 0.18;
+    ring.style.transform = `translate(${rx}px, ${ry}px) translate(-50%,-50%)`;
+    requestAnimationFrame(loop);
+  }
+  loop();
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => ring.classList.add('grow'));
+    el.addEventListener('mouseleave', () => ring.classList.remove('grow'));
+  });
+</script>
+</body>
+</html>

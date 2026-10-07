@@ -32,7 +32,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'application'
+    'application',
+    'authentification'
 ]
 
 MIDDLEWARE = [
@@ -123,3 +124,7 @@ MEDIA_URL = '/media/'
 
 MEDIA_ROOT = BASE_DIR / 'media'
 # Emplacement physique des fichiers sur ton ordinateur
+
+# settings.py
+LOGIN_URL = 'connexion'  # Si l'utilisateur n'est pas connecté, Django le renvoie ici
+LOGIN_REDIRECT_URL = 'accueil_facilo'  # Une fois connecté, il va sur ta page principale (remplace par le nom de ta vue d'accueil)
