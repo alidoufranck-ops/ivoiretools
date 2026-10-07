@@ -69,8 +69,8 @@ def emove(request):
     # Appel en GET (affichage simple de la page)
     return render(request, "rmbg.html", {"images": images_liste})
 @login_required
-def code (requets):
-    return render (requets , 'qr.html')
+def code (requests):
+    return render (requests , 'qr.html')
 @login_required
 def son (request):
     return render (request, 'vocal.html')
