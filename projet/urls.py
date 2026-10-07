@@ -19,10 +19,12 @@ from django.urls import path,include
 from application import views
 from django.conf import settings
 from django.conf.urls.static import static
-from authentification.views import connexion_view # On importe la vue directement
+from authentification.views import * # On importe la vue directement
+from django.views.generic import RedirectView
+
 urlpatterns = [
-     path('admin/', admin.site.urls),
-     path('', connexion_view, name='connexion_accueil'), 
+    path('admin/', admin.site.urls),
+    path('', RedirectView.as_view(pattern_name='connexion', permanent=False)),
     path ('home/',views.acceuil , name = 'acceuil' ),
     path ('remove/', views.emove , name = 'emove'),
     path ('code/', views.code , name = 'code'),
