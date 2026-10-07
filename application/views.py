@@ -5,7 +5,7 @@ from django.core.files.base import ContentFile  # Créer un fichier à partir de
 
 from .models import table  # Importer notre modèle
 
-from rembg import remove  # Supprimer l'arrière-plan d'une image
+
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 import requests  # Télécharger une image à partir d'une URL
@@ -16,13 +16,16 @@ def acceuil (request):
 from django.shortcuts import render
 from django.core.files.base import ContentFile
 import requests
-import rembg  # Assurez-vous que cette importation est bien présente en haut
+
+
 @login_required
-def emove(request):  
-    # 1. Récupère TOUTES les images pour l'historique (accessible partout dans la fonction)
+def emove(request):
+    import rembg
+
+    # 1. Récupère TOUTES les images pour l'historique
     images_liste = table.objects.all().order_by("-id")
-    
-    if request.method == "POST":  
+
+    if request.method == "POST":
         nom = request.POST.get("nom", "").strip()
         photo_url = request.POST.get("photo_url", "").strip()
         photo_fichier = request.FILES.get("photo")
