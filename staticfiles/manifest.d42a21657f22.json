@@ -1,0 +1,21 @@
+{
+  "name": "Facilo Application",
+  "short_name": "Facilo",
+  "start_url": "/auth/connexion/",
+  "display": "standalone",
+  "background_color": "#10131A",
+  "theme_color": "#3D5AFE",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/static/images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
