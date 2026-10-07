@@ -22,55 +22,94 @@ import requests
 def emove(request):
     import rembg
 
-    # 1. Récupère TOUTES les images pour l'historique
-    images_liste = table.objects.all().order_by("-id")
+    # 1. Récupérer uniquement les images de l'utilisateur connecté
+    images_liste = table.objects.filter(
+        utilisateur=request.user
+    ).order_by("-id")
 
     if request.method == "POST":
         nom = request.POST.get("nom", "").strip()
         photo_url = request.POST.get("photo_url", "").strip()
         photo_fichier = request.FILES.get("photo")
-       
+
         # 2. Vérification des entrées
         if photo_url:
             try:
                 response = requests.get(photo_url)
                 input_bytes = response.content
             except Exception:
-                return render(request, "rmbg.html", {"erreur": "Impossible de télécharger l'image depuis l'URL.", "images": images_liste})
+                return render(
+                    request,
+                    "rmbg.html",
+                    {
+                        "erreur": "Impossible de télécharger l'image depuis l'URL.",
+                        "images": images_liste
+                    }
+                )
+
         elif photo_fichier:
             input_bytes = photo_fichier.read()
-        else:
-            # Correction ici : on renvoie 'images' pour éviter le plantage du template
-            return render(request, "rmbg.html", {"erreur": "Veuillez fournir une image.", "images": images_liste})
 
-        # 3. Utilisation correcte de rembg (rembg.remove)
+        else:
+            return render(
+                request,
+                "rmbg.html",
+                {
+                    "erreur": "Veuillez fournir une image.",
+                    "images": images_liste
+                }
+            )
+
+        # 3. Suppression de l'arrière-plan
         try:
             output_bytes = rembg.remove(input_bytes)
-        except Exception as e:
-            return render(request, "rmbg.html", {"erreur": f"Erreur lors de la suppression du fond : {e}", "images": images_liste})
 
-        # 4. Sauvegarde en base de données
-        nouvelle_image = table(nom=nom)
-        nom_fichier = f"{nom or 'image'}_no_bg.png" # Évite un nom vide si 'nom' n'est pas rempli
+        except Exception as e:
+            return render(
+                request,
+                "rmbg.html",
+                {
+                    "erreur": f"Erreur lors de la suppression du fond : {e}",
+                    "images": images_liste
+                }
+            )
+
+        # 4. Création de l'image associée à l'utilisateur connecté
+        nouvelle_image = table(
+            nom=nom,
+            utilisateur=request.user
+        )
+
+        nom_fichier = f"{nom or 'image'}_no_bg.png"
 
         nouvelle_image.photo_modifier.save(
             nom_fichier,
             ContentFile(output_bytes),
             save=False
         )
+
         nouvelle_image.save()
 
-        # Rafraîchir la liste pour inclure la nouvelle image qui vient d'être créée
-        images_liste = table.objects.all().order_by("-id")
+        # 5. Rafraîchir uniquement l'historique de cet utilisateur
+        images_liste = table.objects.filter(
+            utilisateur=request.user
+        ).order_by("-id")
 
         return render(
             request,
             "rmbg.html",
-            {"image": nouvelle_image, "images": images_liste}
+            {
+                "image": nouvelle_image,
+                "images": images_liste
+            }
         )
-    
-    # Appel en GET (affichage simple de la page)
-    return render(request, "rmbg.html", {"images": images_liste})
+
+    # GET
+    return render(
+        request,
+        "rmbg.html",
+        {"images": images_liste}
+    )
 @login_required
 def code (requests):
     return render (requests , 'qr.html')
