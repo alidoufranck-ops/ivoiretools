@@ -135,3 +135,5 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # settings.py
 LOGIN_URL = 'connexion'  # Si l'utilisateur n'est pas connecté, Django le renvoie ici
 LOGIN_REDIRECT_URL = 'accueil_facilo'  # Une fois connecté, il va sur ta page principale (remplace par le nom de ta vue d'accueil)
+
+APPEND_SLASH = True

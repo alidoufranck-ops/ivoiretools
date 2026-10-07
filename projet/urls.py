@@ -24,7 +24,7 @@ from django.views.generic import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', RedirectView.as_view(url='/auth/connexion/', permanent=False)),
+    path('', RedirectView.as_view(url='auth/connexion/', permanent=False)),
     path ('home/',views.acceuil , name = 'acceuil' ),
     path ('remove/', views.emove , name = 'emove'),
     path ('code/', views.code , name = 'code'),
