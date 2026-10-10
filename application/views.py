@@ -62,6 +62,7 @@ def emove(request):
 
         # 3. Suppression de l'arrière-plan
         try:
+            import rembg
             output_bytes = rembg.remove(input_bytes)
 
         except Exception as e:
