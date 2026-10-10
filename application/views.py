@@ -1,4 +1,6 @@
-
+import os
+os.environ["DISABLE_NUMBA"] = "1"
+os.environ["NUMBA_NUM_THREADS"] = "1"
 from django.shortcuts import render  # Afficher une page HTML
 
 from django.core.files.base import ContentFile  # Créer un fichier à partir de données en mémoire
@@ -7,7 +9,7 @@ from .models import table  # Importer notre modèle
 
 
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+
 import requests  # Télécharger une image à partir d'une URL
 # Create your views here.
 def acceuil (request):
@@ -15,7 +17,7 @@ def acceuil (request):
 
 from django.shortcuts import render
 from django.core.files.base import ContentFile
-import requests
+
 
 
 @login_required
