@@ -19,8 +19,9 @@ import requests
 
 
 @login_required
+
+@login_required
 def emove(request):
-    
 
     # 1. Récupérer uniquement les images de l'utilisateur connecté
     images_liste = table.objects.filter(
@@ -35,19 +36,38 @@ def emove(request):
         # 2. Vérification des entrées
         if photo_url:
             try:
-                response = requests.get(photo_url)
+                response = requests.get(
+                    photo_url,
+                    timeout=15
+                )
+                response.raise_for_status()
+
+                # Vérifier que l'URL renvoie bien une image
+                content_type = response.headers.get(
+                    "Content-Type", ""
+                )
+
+                if not content_type.startswith("image/"):
+                    raise ValueError(
+                        "L'URL fournie ne renvoie pas une image."
+                    )
+
                 input_bytes = response.content
-            except Exception:
+
+            except Exception as e:
                 return render(
                     request,
                     "rmbg.html",
                     {
-                        "erreur": "Impossible de télécharger l'image depuis l'URL.",
+                        "erreur": (
+                            f"Impossible de récupérer l'image : {e}"
+                        ),
                         "images": images_liste
                     }
                 )
 
         elif photo_fichier:
+            # L'utilisateur a envoyé une image depuis son appareil
             input_bytes = photo_fichier.read()
 
         else:
@@ -70,7 +90,9 @@ def emove(request):
                 request,
                 "rmbg.html",
                 {
-                    "erreur": f"Erreur lors de la suppression du fond : {e}",
+                    "erreur": (
+                        f"Erreur lors de la suppression du fond : {e}"
+                    ),
                     "images": images_liste
                 }
             )
@@ -91,7 +113,7 @@ def emove(request):
 
         nouvelle_image.save()
 
-        # 5. Rafraîchir uniquement l'historique de cet utilisateur
+        # 5. Actualiser l'historique de cet utilisateur
         images_liste = table.objects.filter(
             utilisateur=request.user
         ).order_by("-id")
@@ -105,12 +127,13 @@ def emove(request):
             }
         )
 
-    # GET
+    # GET : afficher simplement la page
     return render(
         request,
         "rmbg.html",
         {"images": images_liste}
     )
+
 @login_required
 def code (requests):
     return render (requests , 'qr.html')
