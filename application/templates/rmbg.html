@@ -83,16 +83,7 @@
                 radial-gradient(circle at 70% 70%, rgba(255,183,74,.35), transparent 60%);
   }
 
-  .marquee-track{ display:flex; gap:2.5rem; width:max-content; animation: marquee 26s linear infinite; }
-  .marquee:hover .marquee-track{ animation-play-state: paused; }
-  @keyframes marquee{ from{ transform: translateX(0); } to{ transform: translateX(-50%); } }
-
-  .carousel{ scroll-snap-type:x mandatory; scrollbar-width:none; -ms-overflow-style:none; }
-  .carousel::-webkit-scrollbar{ display:none; }
-  .carousel > *{ scroll-snap-align:start; }
-
   .card-tool{ transition: transform .35s ease, box-shadow .35s ease, border-color .35s ease; }
-  .card-tool:hover{ transform: translateY(-8px); box-shadow: 0 24px 48px -20px rgba(16,19,26,.35); border-color: rgba(61,90,254,.4); }
 
   .btn-fill{ transition: transform .25s ease, background .25s ease; }
   .btn-fill:hover{ transform: translateY(-2px); }
@@ -116,34 +107,16 @@
   .dropzone{ transition: border-color .25s ease, background .25s ease; }
   .dropzone.drag{ border-color: var(--volt); background: rgba(61,90,254,.06); }
 
-  #compare-wrap{ touch-action:none; }
-  #compare-handle{
-    position:absolute; top:0; bottom:0; width:3px; background:#fff;
-    box-shadow:0 0 0 1px rgba(0,0,0,.08);
-    transform:translateX(-50%);
-  }
-  #compare-handle::after{
-    content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-    width:38px; height:38px; border-radius:50%; background:#fff;
-    box-shadow:0 8px 20px -6px rgba(16,19,26,.4);
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2310131A' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><polyline points='15 18 9 12 15 6'></polyline></svg>"), url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2310131A' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><polyline points='9 18 15 12 9 6'></polyline></svg>");
-    background-repeat:no-repeat;
-    background-position: 8px center, 22px center;
-  }
-  #compare-top{ position:absolute; inset:0; overflow:hidden; }
-
   .accordion-item[open] .chev{ transform: rotate(180deg); }
   .chev{ transition: transform .25s ease; }
   summary::-webkit-details-marker{ display:none; }
 
-  input[type=range]{ -webkit-appearance:none; height:4px; border-radius:99px; background:#E3E0D8; }
-  input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
-    background: var(--volt); border:3px solid #fff; box-shadow:0 2px 8px rgba(16,19,26,.35); cursor:none;
+  .spinner{
+    width:44px; height:44px; border-radius:50%;
+    border:4px solid rgba(61,90,254,.15); border-top-color:var(--volt);
+    animation: spin 0.9s linear infinite;
   }
-  input[type=range]::-moz-range-thumb{
-    width:18px; height:18px; border-radius:50%; background: var(--volt); border:3px solid #fff; cursor:none;
-  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
 </style>
 </head>
 <body class="text-ink antialiased">
@@ -182,7 +155,7 @@
     <a href="{% url 'acceuil' %}" class="cursor-pointer inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-white/50 hover:text-white transition mb-6">
       <ion-icon name="arrow-back-outline"></ion-icon> Retour aux outils
     </a>
-   
+
     <h1 class="font-display text-5xl sm:text-6xl leading-[1.03] mt-7">
       Un fond blanc, <span class="text-volt">en un glisser-déposer.</span>
     </h1>
@@ -207,180 +180,102 @@
 
     <div class="reveal-scale bg-white border border-black/5 rounded-5xl shadow-2xl p-6 sm:p-10">
 
+      <!-- ÉTAT 1 : choix de l'image -->
+      <div id="step-upload">
 
-        <!-- Formulaire envoyé vers Django -->
-        <form method="POST" enctype="multipart/form-data">
+        <!-- Zone de dépôt -->
+        <div id="dropzone"
+             class="dropzone cursor-pointer border-2 border-dashed border-black/15 rounded-4xl py-16 px-6 flex flex-col items-center justify-center text-center">
 
-            {% csrf_token %}
-            <!-- Protection Django obligatoire pour les formulaires POST -->
+          <span class="w-16 h-16 rounded-full bg-volt/10 text-volt flex items-center justify-center text-3xl mb-5">
+            <ion-icon name="cloud-upload-outline"></ion-icon>
+          </span>
 
+          <p class="font-display text-2xl">Glissez votre image ici</p>
+          <p class="text-mute mt-2 text-sm">
+            ou cliquez pour parcourir vos fichiers — JPG, PNG ou WebP
+          </p>
 
-            <!-- Zone de dépôt -->
-            <div id="dropzone" 
-                 class="dropzone cursor-pointer border-2 border-dashed border-black/15 rounded-4xl py-16 px-6 flex flex-col items-center justify-center text-center">
+          <span class="btn-outline mt-7 border border-black/15 text-sm font-semibold px-6 py-3 rounded-full hover:bg-paperdim">
+            Choisir une image
+          </span>
 
-
-                <span class="w-16 h-16 rounded-full bg-volt/10 text-volt flex items-center justify-center text-3xl mb-5">
-                    <ion-icon name="cloud-upload-outline"></ion-icon>
-                </span>
-
-
-                
-
-                <p class="text-mute mt-2 text-sm">
-                     cliquez pour parcourir vos fichiers — JPG, PNG ou WebP
-                </p>
-
-
-               
-
-
-                <div class="flex items-center gap-3 mt-7">
-
-
-                   
-
-                    <!-- Champ URL de l'image -->
-<input 
-    type="url"
-    name="photo_url"
-    placeholder="Collez l'URL de votre image ici"
-    class="mt-5 w-full max-w-md border border-black/15 rounded-full px-5 py-3 focus:outline-none"
-/>
-
-                    <button 
-                        type="submit"
-                        class="btn-outline cursor-pointer border border-black/15 text-sm font-semibold px-6 py-3 rounded-full hover:bg-paperdim">
-
-                        Supprimer le fond
-
-                    </button>
-
-
-                </div>
-
-
-                <input 
-                    id="file-input"
-                    name="photo"
-                    type="file"
-                    accept="image/png, image/jpeg, image/webp"
-                    class="hidden"
-                >
-                <!-- Correspond à :
-                     photo_fichier = request.FILES.get("photo")
-                -->
-
-
-            </div>
-
-
-        </form>
-
-
-
-       
-
-<!-- Section résultat -->
-{% if image %}
-
-<section class="mt-12">
-
-    <div class="bg-white border border-black/5 rounded-5xl shadow-xl p-6 sm:p-10">
-
-        <h2 class="font-display text-3xl text-center mb-8">
-            Votre image sans arrière-plan
-        </h2>
-
-
-        <div class="flex flex-col items-center justify-center">
-
-
-            <!-- Image générée -->
-            <div class="bg-gray-100 rounded-3xl p-6">
-
-                <img 
-                    src="{{ image.photo_modifier.url }}"
-                    alt="Image sans fond"
-                    class="max-w-md rounded-xl"
-                >
-
-            </div>
-
-
-            <!-- Bouton téléchargement -->
-            <a 
-                href="{{ image.photo_modifier.url }}"
-                download
-                class="mt-8 bg-black text-white px-8 py-3 rounded-full font-semibold hover:opacity-80 transition">
-
-                Télécharger l'image
-
-            </a>
-
-
-        </div>
-
-
-    </div>
-
-</section>
-
-{% endif %}
-</section>
-<section class="max-w-6xl mx-auto px-6 lg:px-10 pb-24 reveal">
-  <div class="bg-white border border-black/5 rounded-5xl shadow-xl p-6 sm:p-10">
-
-    <div class="text-center mb-10">
-      <span class="text-xs font-mono uppercase tracking-widest text-volt">Votre galerie</span>
-      <h2 class="font-display text-3xl sm:text-4xl mt-3">Mes images modifiées</h2>
-      <p class="text-mute text-sm mt-2">Retrouvez ici toutes les images deja avez détourées.</p>
-    </div>
-
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {% for img in images %}
-      <div class="card-tool bg-paperdim border border-black/5 rounded-4xl p-5">
-        <div class="checkerboard rounded-2xl overflow-hidden border border-black/5">
-          <img
-            src="{{ img.photo_modifier.url }}"
-            alt="{{ img.nom }}"
-            class="w-full h-48 object-contain"
+          <input
+            id="file-input"
+            type="file"
+            accept="image/png, image/jpeg, image/webp"
+            class="hidden"
           >
         </div>
 
-        <div class="flex items-center justify-between mt-4">
-          <h3 class="font-semibold text-sm truncate pr-2">{{ img.nom }}</h3>
-          <span class="text-[10px] font-mono bg-white px-2.5 py-1 rounded-full shrink-0">PNG</span>
+        <!-- Option : URL d'une image -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mt-6">
+          <input
+            id="url-input"
+            type="url"
+            placeholder="Ou collez l'URL d'une image"
+            class="w-full max-w-md border border-black/15 rounded-full px-5 py-3 text-sm focus:outline-none focus:border-volt"
+          />
+          <button
+            id="url-btn"
+            type="button"
+            class="btn-outline cursor-pointer border border-black/15 text-sm font-semibold px-6 py-3 rounded-full hover:bg-paperdim">
+            Charger l'URL
+          </button>
         </div>
-        <a 
-    href="{{ img.photo_modifier.url }}"
-    download
-    class="mt-4 flex items-center justify-center gap-2 bg-ink text-white text-sm font-semibold px-5 py-3 rounded-full">
 
-    <ion-icon name="download-outline"></ion-icon>
-    Télécharger
+        <p id="error-box" class="hidden text-center text-sm text-red-600 mt-5"></p>
+      </div>
 
-</a>
+      <!-- ÉTAT 2 : traitement en cours -->
+      <div id="step-loading" class="hidden py-16 flex flex-col items-center text-center">
+        <div class="spinner"></div>
+        <p id="loading-text" class="font-display text-2xl mt-6">Préparation…</p>
+        <p class="text-mute text-sm mt-2 max-w-sm">
+          Au tout premier usage, le modèle d'IA est téléchargé (quelques dizaines de Mo). Ensuite, il est mis en cache.
+        </p>
+        <div class="w-full max-w-sm h-2 rounded-full bg-paperdim mt-6 overflow-hidden">
+          <div id="loading-bar" class="h-full bg-volt rounded-full transition-all duration-200" style="width:0%"></div>
+        </div>
       </div>
-      {% empty %}
-      <div class="col-span-full flex flex-col items-center text-center py-14">
-        <span class="w-16 h-16 rounded-full bg-volt/10 text-volt flex items-center justify-center text-2xl mb-5">
-          <ion-icon name="images-outline"></ion-icon>
-        </span>
-        <p class="font-display text-xl">Aucune image modifiée pour le moment</p>
-        <p class="text-mute text-sm mt-2 max-w-xs">Utilisez l'outil ci-dessus pour créer votre première image sans fond.</p>
-        <a href="#outil" class="btn-fill cursor-pointer bg-ink text-white text-sm font-semibold px-6 py-3 rounded-full mt-6">
-          Utiliser l'outil
-        </a>
+
+      <!-- ÉTAT 3 : résultat -->
+      <div id="step-result" class="hidden">
+        <h2 class="font-display text-3xl text-center mb-8">Votre image sans arrière-plan</h2>
+
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <p class="text-xs font-mono uppercase tracking-widest text-mute mb-3 text-center">Original</p>
+            <div class="bg-paperdim rounded-3xl p-4 border border-black/5">
+              <img id="img-before" alt="Image originale" class="w-full max-h-[460px] object-contain rounded-xl">
+            </div>
+          </div>
+          <div>
+            <p class="text-xs font-mono uppercase tracking-widest text-volt mb-3 text-center">Sans fond</p>
+            <div class="checkerboard rounded-3xl p-4 border border-black/5">
+              <img id="img-after" alt="Image sans fond" class="w-full max-h-[460px] object-contain rounded-xl">
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center gap-4 mt-10">
+          <a id="download-btn"
+             href="#"
+             download="image-sans-fond.png"
+             class="btn-fill cursor-pointer inline-flex items-center gap-2 bg-ink text-white text-sm font-semibold px-8 py-3.5 rounded-full">
+            <ion-icon name="download-outline"></ion-icon>
+            Télécharger le PNG
+          </a>
+          <button id="reset-btn" type="button"
+                  class="btn-outline cursor-pointer border border-black/15 text-sm font-semibold px-6 py-3.5 rounded-full hover:bg-paperdim">
+            Nouvelle image
+          </button>
+        </div>
       </div>
-      {% endfor %}
+
     </div>
+  </section>
 
-  </div>
-</section>
-         
-
-        
   <!-- ============ COMMENT ÇA MARCHE ============ -->
   <section id="comment" class="bg-ink text-white py-28">
     <div class="max-w-7xl mx-auto px-6 lg:px-10">
@@ -388,13 +283,13 @@
         <span class="text-xs font-mono uppercase tracking-widest text-amber">Le principe</span>
         <h2 class="font-display text-4xl sm:text-5xl mt-3">Deux étapes,</h2>
       </div>
-      <div class="grid md:grid-cols-3 gap-10">
+      <div class="grid md:grid-cols-2 gap-10">
         <div class="reveal">
           <span class="font-display text-5xl text-white/15">01</span>
           <h3 class="font-display text-2xl mt-5">Déposez votre photo</h3>
-          <p class="text-white/55 mt-3">Glissez un fichier JPG, PNG ou URL dans la zone prévue, ou choisissez-le depuis votre appareil.</p>
+          <p class="text-white/55 mt-3">Glissez un fichier JPG, PNG ou WebP dans la zone prévue, collez une URL, ou choisissez-le depuis votre appareil.</p>
         </div>
-      
+
         <div class="reveal">
           <span class="font-display text-5xl text-white/15">02</span>
           <h3 class="font-display text-2xl mt-5">Téléchargez le PNG</h3>
@@ -403,8 +298,6 @@
       </div>
     </div>
   </section>
-
-  
 
   <!-- ============ FAQ ============ -->
   <section id="faq" class="bg-paperdim py-28">
@@ -429,7 +322,6 @@
           </summary>
           <p class="text-mute text-sm mt-4">Vous pouvez importer des images JPG, PNG ou WebP. Le résultat est toujours exporté en PNG afin de conserver la transparence.</p>
         </details>
-       
         <details class="accordion-item bg-white rounded-3xl border border-black/5 p-6 cursor-pointer">
           <summary class="flex items-center justify-between font-semibold cursor-pointer list-none">
             Y a-t-il une limite d'utilisation ?
@@ -440,8 +332,6 @@
       </div>
     </div>
   </section>
-
-  
 
   <!-- ============ CTA ============ -->
   <section class="max-w-7xl mx-auto px-6 lg:px-10 pb-24">
@@ -471,28 +361,23 @@
         </a>
         <p class="mt-5 max-w-xs text-sm">Des petits outils du quotidien, réunis au même endroit, pensés pour aller vite.</p>
         <div class="flex items-center gap-3 mt-6">
-          <a href="mailto:alidoufranck@gmail.com"
-   class="cursor-pointer w-10 h-10 rounded-full border border-white/15 flex items-center justify-center hover:bg-white/10 transition">
-    <ion-icon name="mail-outline"></ion-icon>
-</a>          <a href="https://github.com/alidoufranck-ops" class="cursor-pointer w-10 h-10 rounded-full border border-white/15 flex items-center justify-center hover:bg-white/10 transition"><ion-icon name="logo-github"></ion-icon></a>
+          <a href="mailto:alidoufranck@gmail.com" class="cursor-pointer w-10 h-10 rounded-full border border-white/15 flex items-center justify-center hover:bg-white/10 transition"><ion-icon name="mail-outline"></ion-icon></a>
+          <a href="https://github.com/alidoufranck-ops" class="cursor-pointer w-10 h-10 rounded-full border border-white/15 flex items-center justify-center hover:bg-white/10 transition"><ion-icon name="logo-github"></ion-icon></a>
           <a href="https://www.linkedin.com/in/alidou-franck-8abb083a9" class="cursor-pointer w-10 h-10 rounded-full border border-white/15 flex items-center justify-center hover:bg-white/10 transition"><ion-icon name="logo-linkedin"></ion-icon></a>
         </div>
       </div>
-     
+
       <div>
         <p class="text-white font-semibold mb-4 text-sm">Ressources</p>
         <ul class="space-y-3 text-sm">
           <li><a href="#comment" class="cursor-pointer hover:text-white transition">Comment ça marche</a></li>
-          
         </ul>
       </div>
     </div>
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 text-xs text-white/40">
-      
-      
-    </div>
   </div>
 </footer>
+
+<!-- ============ JS : curseur + animations ============ -->
 <script>
   // ---------- custom cursor ----------
   const dot = document.getElementById('cur-dot');
@@ -508,13 +393,10 @@
     ring.style.transform = `translate(${rx}px, ${ry}px) translate(-50%,-50%)`;
     requestAnimationFrame(loop);
   })();
-  function bindCursorTargets(){
-    document.querySelectorAll('a, button, .cursor-pointer, summary').forEach(el => {
-      el.addEventListener('mouseenter', () => ring.classList.add('grow'));
-      el.addEventListener('mouseleave', () => ring.classList.remove('grow'));
-    });
-  }
-  bindCursorTargets();
+  document.querySelectorAll('a, button, .cursor-pointer, summary').forEach(el => {
+    el.addEventListener('mouseenter', () => ring.classList.add('grow'));
+    el.addEventListener('mouseleave', () => ring.classList.remove('grow'));
+  });
   document.addEventListener('mouseleave', () => { dot.style.opacity = 0; ring.style.opacity = 0; });
   document.addEventListener('mouseenter', () => { dot.style.opacity = 1; ring.style.opacity = 1; });
 
@@ -525,191 +407,140 @@
     });
   }, { threshold: 0.15 });
   document.querySelectorAll('.reveal, .reveal-scale').forEach(el => io.observe(el));
+</script>
 
-  // ---------- accordion chevrons already handled by [open] CSS ----------
+<!-- ============ JS : SUPPRESSION DE FOND (100% navigateur) ============ -->
+<script type="module">
+  import { removeBackground } from "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/+esm";
 
-  // ================= OUTIL : SUPPRESSION DE FOND =================
-  const dropzone = document.getElementById('dropzone');
-  const fileInput = document.getElementById('file-input');
-  const toolPanel = document.getElementById('tool-panel');
-  const canvasOriginal = document.getElementById('canvas-original');
-  const canvasProcessed = document.getElementById('canvas-processed');
-  const compareWrap = document.getElementById('compare-wrap');
-  const compareTop = document.getElementById('compare-top');
-  const compareHandle = document.getElementById('compare-handle');
-  const toleranceInput = document.getElementById('tolerance');
-  const toleranceVal = document.getElementById('tolerance-val');
-  const swatch = document.getElementById('swatch');
-  const downloadBtn = document.getElementById('download-btn');
-  const resetBtn = document.getElementById('reset-btn');
-  const trySampleBtn = document.getElementById('try-sample');
+  const $ = (id) => document.getElementById(id);
 
-  const ctxOriginal = canvasOriginal.getContext('2d', { willReadFrequently: true });
-  const ctxProcessed = canvasProcessed.getContext('2d', { willReadFrequently: true });
+  const stepUpload  = $('step-upload');
+  const stepLoading = $('step-loading');
+  const stepResult  = $('step-result');
+  const dropzone    = $('dropzone');
+  const fileInput   = $('file-input');
+  const urlInput    = $('url-input');
+  const urlBtn      = $('url-btn');
+  const errorBox    = $('error-box');
+  const loadingText = $('loading-text');
+  const loadingBar  = $('loading-bar');
+  const imgBefore   = $('img-before');
+  const imgAfter    = $('img-after');
+  const downloadBtn = $('download-btn');
+  const resetBtn    = $('reset-btn');
 
-  let bgColor = { r: 255, g: 255, b: 255 };
-  let originalImageData = null; // pristine source pixels
+  const TYPES_OK = ['image/png', 'image/jpeg', 'image/webp'];
+  let urlsToRevoke = [];
 
-  function openDialog(){ fileInput.click(); }
-  dropzone.addEventListener('click', openDialog);
+  function show(step){
+    [stepUpload, stepLoading, stepResult].forEach(s => s.classList.add('hidden'));
+    step.classList.remove('hidden');
+  }
+  function showError(msg){
+    errorBox.textContent = msg;
+    errorBox.classList.remove('hidden');
+  }
+  function clearError(){ errorBox.classList.add('hidden'); }
 
-  ['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, e => {
+  function cleanup(){
+    urlsToRevoke.forEach(u => URL.revokeObjectURL(u));
+    urlsToRevoke = [];
+    imgBefore.removeAttribute('src');
+    imgAfter.removeAttribute('src');
+    downloadBtn.removeAttribute('href');
+  }
+
+  // ----- traitement principal -----
+  async function process(blob, name){
+    clearError();
+
+    if (!TYPES_OK.includes(blob.type)){
+      showError("Format non pris en charge. Utilisez un fichier JPG, PNG ou WebP.");
+      return;
+    }
+
+    cleanup();
+    show(stepLoading);
+    loadingText.textContent = 'Préparation…';
+    loadingBar.style.width = '0%';
+
+    try {
+      const resultBlob = await removeBackground(blob, {
+        output: { format: 'image/png' },
+        progress: (key, current, total) => {
+          const pct = total ? Math.round((current / total) * 100) : 0;
+          loadingBar.style.width = pct + '%';
+          loadingText.textContent = key.startsWith('fetch')
+            ? 'Téléchargement du modèle…'
+            : 'Détourage en cours…';
+        }
+      });
+
+      const urlBefore = URL.createObjectURL(blob);
+      const urlAfter  = URL.createObjectURL(resultBlob);
+      urlsToRevoke.push(urlBefore, urlAfter);
+
+      imgBefore.src = urlBefore;
+      imgAfter.src  = urlAfter;
+
+      const base = (name || 'image').replace(/\.[^.]+$/, '');
+      downloadBtn.href = urlAfter;
+      downloadBtn.download = base + '-sans-fond.png';
+
+      show(stepResult);
+    } catch (err) {
+      console.error(err);
+      show(stepUpload);
+      showError("Une erreur est survenue pendant le traitement. Réessayez avec une autre image.");
+    }
+  }
+
+  // ----- fichier local -----
+  dropzone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) process(file, file.name);
+    fileInput.value = ''; // permet de re-choisir le même fichier
+  });
+
+  // ----- glisser-déposer -----
+  ['dragenter', 'dragover'].forEach(evt => dropzone.addEventListener(evt, (e) => {
     e.preventDefault(); e.stopPropagation(); dropzone.classList.add('drag');
   }));
-  ['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, e => {
+  ['dragleave', 'drop'].forEach(evt => dropzone.addEventListener(evt, (e) => {
     e.preventDefault(); e.stopPropagation(); dropzone.classList.remove('drag');
   }));
-  dropzone.addEventListener('drop', e => {
+  dropzone.addEventListener('drop', (e) => {
     const file = e.dataTransfer.files && e.dataTransfer.files[0];
-    if (file) loadFile(file);
-  });
-  fileInput.addEventListener('change', e => {
-    const file = e.target.files && e.target.files[0];
-    if (file) loadFile(file);
+    if (file) process(file, file.name);
   });
 
-  function loadFile(file){
-    if (!file.type.match(/image\/(png|jpeg|jpg|webp)/)) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => setupCanvases(img);
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function setupCanvases(img){
-    const maxDim = 860;
-    const scale = Math.min(1, maxDim / img.width, maxDim / img.height);
-    const w = Math.round(img.width * scale);
-    const h = Math.round(img.height * scale);
-
-    [canvasOriginal, canvasProcessed].forEach(c => { c.width = w; c.height = h; });
-
-    ctxOriginal.drawImage(img, 0, 0, w, h);
-    originalImageData = ctxOriginal.getImageData(0, 0, w, h);
-
-    // auto-sample background color from the four corners (average)
-    const corners = [[0,0],[w-1,0],[0,h-1],[w-1,h-1]];
-    let r=0,g=0,b=0;
-    corners.forEach(([x,y]) => {
-      const i = (y * w + x) * 4;
-      r += originalImageData.data[i]; g += originalImageData.data[i+1]; b += originalImageData.data[i+2];
-    });
-    bgColor = { r: Math.round(r/4), g: Math.round(g/4), b: Math.round(b/4) };
-    updateSwatch();
-
-    applyRemoval();
-
-    dropzone.classList.add('hidden');
-    toolPanel.classList.remove('hidden');
-    compareHandle.style.left = '50%';
-    compareTop.style.clipPath = 'inset(0 50% 0 0)';
-  }
-
-  function updateSwatch(){
-    swatch.style.background = `rgb(${bgColor.r}, ${bgColor.g}, ${bgColor.b})`;
-  }
-
-  function applyRemoval(){
-    if (!originalImageData) return;
-    const w = canvasOriginal.width, h = canvasOriginal.height;
-    const src = originalImageData.data;
-    const out = ctxProcessed.createImageData(w, h);
-    const dst = out.data;
-    const tol = parseInt(toleranceInput.value, 10); // 5..100
-    const hardT = tol * 2.6;      // fully transparent below this distance
-    const softT = hardT + 40;     // fully opaque above this distance
-
-    for (let i = 0; i < src.length; i += 4){
-      const r = src[i], g = src[i+1], b = src[i+2], a = src[i+3];
-      const dr = r - bgColor.r, dg = g - bgColor.g, db = b - bgColor.b;
-      const dist = Math.sqrt(dr*dr + dg*dg + db*db);
-      let alpha;
-      if (dist <= hardT) alpha = 0;
-      else if (dist >= softT) alpha = 255;
-      else alpha = Math.round(((dist - hardT) / (softT - hardT)) * 255);
-      dst[i] = r; dst[i+1] = g; dst[i+2] = b; dst[i+3] = Math.min(a, alpha);
+  // ----- URL -----
+  async function loadFromUrl(){
+    const url = urlInput.value.trim();
+    if (!url) return;
+    clearError();
+    try {
+      const rep = await fetch(url);
+      if (!rep.ok) throw new Error('HTTP ' + rep.status);
+      const blob = await rep.blob();
+      const name = url.split('/').pop().split('?')[0] || 'image';
+      await process(blob, name);
+    } catch (err) {
+      console.error(err);
+      showError("Impossible de récupérer cette image (le site bloque peut-être l'accès). Téléchargez-la puis importez-la depuis votre appareil.");
     }
-    ctxProcessed.putImageData(out, 0, 0);
   }
+  urlBtn.addEventListener('click', loadFromUrl);
+  urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadFromUrl(); });
 
-  toleranceInput.addEventListener('input', () => {
-    toleranceVal.textContent = toleranceInput.value;
-    applyRemoval();
-  });
-
-  canvasOriginal.addEventListener('click', (e) => {
-    const rect = canvasOriginal.getBoundingClientRect();
-    const x = Math.round((e.clientX - rect.left) * (canvasOriginal.width / rect.width));
-    const y = Math.round((e.clientY - rect.top) * (canvasOriginal.height / rect.height));
-    const i = (y * canvasOriginal.width + x) * 4;
-    bgColor = { r: originalImageData.data[i], g: originalImageData.data[i+1], b: originalImageData.data[i+2] };
-    updateSwatch();
-    applyRemoval();
-  });
-
-  // ---------- comparison divider drag ----------
-  let dragging = false;
-  function setDivider(clientX){
-    const rect = compareWrap.getBoundingClientRect();
-    let pct = ((clientX - rect.left) / rect.width) * 100;
-    pct = Math.max(0, Math.min(100, pct));
-    compareHandle.style.left = pct + '%';
-    compareTop.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
-  }
-  compareHandle.addEventListener('pointerdown', (e) => { dragging = true; e.preventDefault(); });
-  window.addEventListener('pointermove', (e) => { if (dragging) setDivider(e.clientX); });
-  window.addEventListener('pointerup', () => dragging = false);
-  compareWrap.addEventListener('click', (e) => {
-    if (e.target === compareHandle) return;
-  });
-
-  // ---------- download ----------
-  downloadBtn.addEventListener('click', () => {
-    canvasProcessed.toBlob((blob) => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = 'facilo-fond-transparent.png';
-      document.body.appendChild(a); a.click(); a.remove();
-      URL.revokeObjectURL(url);
-    }, 'image/png');
-  });
-
-  // ---------- reset ----------
+  // ----- nouvelle image -----
   resetBtn.addEventListener('click', () => {
-    fileInput.value = '';
-    originalImageData = null;
-    toolPanel.classList.add('hidden');
-    dropzone.classList.remove('hidden');
-  });
-
-  // ---------- sample image (generated on canvas, no external asset) ----------
-  trySampleBtn.addEventListener('click', () => {
-    const w = 700, h = 700;
-    const sample = document.createElement('canvas');
-    sample.width = w; sample.height = h;
-    const sctx = sample.getContext('2d');
-    sctx.fillStyle = '#EDEAE2';
-    sctx.fillRect(0, 0, w, h);
-    // simple "product" illustration: a mug
-    sctx.fillStyle = '#3D5AFE';
-    sctx.beginPath();
-    sctx.roundRect(220, 220, 260, 300, 28);
-    sctx.fill();
-    sctx.strokeStyle = '#3D5AFE';
-    sctx.lineWidth = 26;
-    sctx.beginPath();
-    sctx.arc(500, 330, 60, -0.9, 0.9);
-    sctx.stroke();
-    sctx.fillStyle = '#FFB74A';
-    sctx.beginPath();
-    sctx.roundRect(250, 250, 200, 40, 20);
-    sctx.fill();
-    const img = new Image();
-    img.onload = () => setupCanvases(img);
-    img.src = sample.toDataURL('image/png');
+    cleanup();
+    urlInput.value = '';
+    clearError();
+    show(stepUpload);
   });
 </script>
 
