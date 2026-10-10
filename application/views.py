@@ -20,7 +20,7 @@ import requests
 
 @login_required
 def emove(request):
-    import rembg
+    
 
     # 1. Récupérer uniquement les images de l'utilisateur connecté
     images_liste = table.objects.filter(
