@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Générateur de QR Code — Facilo</title>
-<meta name="description" content="Créez un QR code pour un lien, un texte, un Wi-Fi ou un email, avec vos propres couleurs, directement dans votre navigateur.">
+<meta name="description" content="Créez un QR code pour un lien, un texte, WhatsApp, un téléphone, un SMS, un Wi-Fi ou un email, avec vos couleurs et votre logo, directement dans votre navigateur.">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -39,7 +39,8 @@
 
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- Générateur de QR code (remplace qrcodejs : gère mieux l'UTF-8 et permet l'export SVG) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 
 <style>
   :root{ --volt:#3D5AFE; --amber:#FFB74A; --ink:#10131A; }
@@ -71,7 +72,7 @@
 
   @media (prefers-reduced-motion: reduce){
     .reveal, .reveal-scale{ opacity:1 !important; transform:none !important; transition:none !important; }
-    .float-anim, .float-anim-slow, .marquee-track{ animation:none !important; }
+    .float-anim, .float-anim-slow{ animation:none !important; }
   }
 
   .float-anim{ animation: floaty 6s ease-in-out infinite; }
@@ -84,21 +85,10 @@
                 radial-gradient(circle at 70% 70%, rgba(255,183,74,.35), transparent 60%);
   }
 
-  .marquee-track{ display:flex; gap:2.5rem; width:max-content; animation: marquee 26s linear infinite; }
-  .marquee:hover .marquee-track{ animation-play-state: paused; }
-  @keyframes marquee{ from{ transform: translateX(0); } to{ transform: translateX(-50%); } }
-
-  .carousel{ scroll-snap-type:x mandatory; scrollbar-width:none; -ms-overflow-style:none; }
-  .carousel::-webkit-scrollbar{ display:none; }
-  .carousel > *{ scroll-snap-align:start; }
-
-  .card-tool{ transition: transform .35s ease, box-shadow .35s ease, border-color .35s ease; }
-  .card-tool:hover{ transform: translateY(-8px); box-shadow: 0 24px 48px -20px rgba(16,19,26,.35); border-color: rgba(61,90,254,.4); }
-
   .btn-fill{ transition: transform .25s ease, background .25s ease; }
-  .btn-fill:hover{ transform: translateY(-2px); }
+  .btn-fill:hover:not(:disabled){ transform: translateY(-2px); }
   .btn-outline{ transition: transform .25s ease, background .25s ease, color .25s ease; }
-  .btn-outline:hover{ transform: translateY(-2px); }
+  .btn-outline:hover:not(:disabled){ transform: translateY(-2px); }
 
   .curve-mask{ border-radius: 2.5rem 2.5rem 0 0; }
   ::selection{ background: var(--volt); color: #fff; }
@@ -108,7 +98,9 @@
   .chev{ transition: transform .25s ease; }
   summary::-webkit-details-marker{ display:none; }
 
-  input[type=range]{ -webkit-appearance:none; height:4px; border-radius:99px; background:#E3E0D8; }
+  button:focus-visible, .tab-btn:focus-visible, summary:focus-visible{ outline:2px solid var(--volt); outline-offset:2px; }
+
+  input[type=range]{ -webkit-appearance:none; appearance:none; height:4px; border-radius:99px; background:#E3E0D8; }
   input[type=range]::-webkit-slider-thumb{
     -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
     background: var(--volt); border:3px solid #fff; box-shadow:0 2px 8px rgba(16,19,26,.35); cursor:none;
@@ -129,11 +121,12 @@
     padding:.85rem 1.1rem; font-size:.9rem; color:var(--ink); transition:border-color .2s ease, background .2s ease;
   }
   .field-input:focus{ outline:none; border-color: var(--volt); background:#fff; }
+  .field-input:disabled{ opacity:.55; }
 
   .tab-btn{ transition: background .25s ease, color .25s ease; }
   .tab-btn.active{ background: var(--ink); color:#fff; }
 
-  #qr-preview canvas, #qr-preview img{ border-radius:1.25rem; }
+  #qr-canvas{ border-radius:1.25rem; width:100%; max-width:280px; height:auto; display:block; }
 </style>
 </head>
 <body class="text-ink antialiased">
@@ -172,12 +165,12 @@
     <a href="{% url 'acceuil' %}" class="cursor-pointer inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-white/50 hover:text-white transition mb-6">
       <ion-icon name="arrow-back-outline"></ion-icon> Retour aux outils
     </a>
-    
+
     <h1 class="font-display text-5xl sm:text-6xl leading-[1.03] mt-7">
       Un lien, un texte, <span class="text-volt">un QR code.</span>
     </h1>
-    <p class="text-white/60 text-lg mt-6 max-w-lg mx-auto">
-      Générez un QR code personnalisé pour un site, un Wi-Fi ou un email, avec vos propres couleurs, prêt à télécharger en quelques secondes.
+    <p class="text-white/60 text-lg mt-6 max-w-xl mx-auto">
+      Générez un QR code pour un site, WhatsApp, un téléphone, un SMS, un Wi-Fi ou un email, avec vos couleurs et votre logo, prêt à télécharger en PNG ou SVG.
     </p>
     <div class="flex flex-wrap justify-center items-center gap-3 mt-8 text-xs font-mono text-white/50">
       <span class="flex items-center gap-1.5 border border-white/10 px-3 py-1.5 rounded-full"><ion-icon name="shield-checkmark-outline" class="text-volt"></ion-icon> 100% local</span>
@@ -200,109 +193,188 @@
         <!-- form panel -->
         <div>
           <!-- tabs -->
-          <div class="flex flex-wrap gap-2 mb-7">
-            <button data-tab="lien" class="tab-btn active cursor-pointer text-sm font-semibold px-5 py-2.5 rounded-full border border-black/10 flex items-center gap-2">
+          <div class="flex flex-wrap gap-2 mb-7" role="tablist" aria-label="Type de QR code">
+            <button type="button" role="tab" aria-selected="true" data-tab="lien" class="tab-btn active cursor-pointer text-sm font-semibold px-4 py-2.5 rounded-full border border-black/10 flex items-center gap-2">
               <ion-icon name="link-outline"></ion-icon> Lien
             </button>
-            <button data-tab="texte" class="tab-btn cursor-pointer text-sm font-semibold px-5 py-2.5 rounded-full border border-black/10 flex items-center gap-2 text-mute">
+            <button type="button" role="tab" aria-selected="false" data-tab="texte" class="tab-btn cursor-pointer text-sm font-semibold px-4 py-2.5 rounded-full border border-black/10 flex items-center gap-2 text-mute">
               <ion-icon name="chatbox-outline"></ion-icon> Texte
             </button>
-            <button data-tab="wifi" class="tab-btn cursor-pointer text-sm font-semibold px-5 py-2.5 rounded-full border border-black/10 flex items-center gap-2 text-mute">
+            <button type="button" role="tab" aria-selected="false" data-tab="whatsapp" class="tab-btn cursor-pointer text-sm font-semibold px-4 py-2.5 rounded-full border border-black/10 flex items-center gap-2 text-mute">
+              <ion-icon name="logo-whatsapp"></ion-icon> WhatsApp
+            </button>
+            <button type="button" role="tab" aria-selected="false" data-tab="tel" class="tab-btn cursor-pointer text-sm font-semibold px-4 py-2.5 rounded-full border border-black/10 flex items-center gap-2 text-mute">
+              <ion-icon name="call-outline"></ion-icon> Téléphone
+            </button>
+            <button type="button" role="tab" aria-selected="false" data-tab="sms" class="tab-btn cursor-pointer text-sm font-semibold px-4 py-2.5 rounded-full border border-black/10 flex items-center gap-2 text-mute">
+              <ion-icon name="chatbubble-ellipses-outline"></ion-icon> SMS
+            </button>
+            <button type="button" role="tab" aria-selected="false" data-tab="wifi" class="tab-btn cursor-pointer text-sm font-semibold px-4 py-2.5 rounded-full border border-black/10 flex items-center gap-2 text-mute">
               <ion-icon name="wifi-outline"></ion-icon> Wi-Fi
             </button>
-            <button data-tab="email" class="tab-btn cursor-pointer text-sm font-semibold px-5 py-2.5 rounded-full border border-black/10 flex items-center gap-2 text-mute">
+            <button type="button" role="tab" aria-selected="false" data-tab="email" class="tab-btn cursor-pointer text-sm font-semibold px-4 py-2.5 rounded-full border border-black/10 flex items-center gap-2 text-mute">
               <ion-icon name="mail-outline"></ion-icon> Email
             </button>
           </div>
 
           <!-- Lien -->
-          <div class="tab-panel" data-panel="lien">
-            <label class="text-sm font-semibold">Adresse du lien</label>
-            <input id="f-url" type="text" class="field-input mt-2" placeholder="https://votre-site.com" value="https://facilo.app">
+          <div class="tab-panel" data-panel="lien" role="tabpanel">
+            <label for="f-url" class="text-sm font-semibold">Adresse du lien</label>
+            <input id="f-url" type="text" inputmode="url" autocomplete="off" class="field-input mt-2" placeholder="https://votre-site.com" value="https://facilo.app">
+            <p class="text-xs text-mute mt-2">Le « https:// » est ajouté automatiquement s'il manque.</p>
           </div>
 
           <!-- Texte -->
-          <div class="tab-panel hidden" data-panel="texte">
-            <label class="text-sm font-semibold">Votre texte</label>
+          <div class="tab-panel hidden" data-panel="texte" role="tabpanel">
+            <label for="f-text" class="text-sm font-semibold">Votre texte</label>
             <textarea id="f-text" rows="4" class="field-input mt-2" placeholder="Écrivez le texte à encoder…">Merci de votre visite !</textarea>
           </div>
 
+          <!-- WhatsApp -->
+          <div class="tab-panel hidden space-y-4" data-panel="whatsapp" role="tabpanel">
+            <div>
+              <label for="f-wanumber" class="text-sm font-semibold">Numéro WhatsApp</label>
+              <input id="f-wanumber" type="tel" inputmode="tel" autocomplete="off" class="field-input mt-2" placeholder="33612345678">
+              <p class="text-xs text-mute mt-2">Avec l'indicatif du pays, sans « + » ni « 0 » initial (ex. 33612345678 pour le 06 12 34 56 78 en France).</p>
+            </div>
+            <div>
+              <label for="f-wamsg" class="text-sm font-semibold">Message prérempli <span class="text-mute font-normal">(optionnel)</span></label>
+              <textarea id="f-wamsg" rows="2" class="field-input mt-2" placeholder="Bonjour, je vous contacte via votre QR code."></textarea>
+            </div>
+          </div>
+
+          <!-- Téléphone -->
+          <div class="tab-panel hidden" data-panel="tel" role="tabpanel">
+            <label for="f-telnumber" class="text-sm font-semibold">Numéro de téléphone</label>
+            <input id="f-telnumber" type="tel" inputmode="tel" autocomplete="off" class="field-input mt-2" placeholder="+33 6 12 34 56 78">
+            <p class="text-xs text-mute mt-2">Commencez par « + » et l'indicatif du pays pour que le numéro fonctionne partout.</p>
+          </div>
+
+          <!-- SMS -->
+          <div class="tab-panel hidden space-y-4" data-panel="sms" role="tabpanel">
+            <div>
+              <label for="f-smsnumber" class="text-sm font-semibold">Numéro du destinataire</label>
+              <input id="f-smsnumber" type="tel" inputmode="tel" autocomplete="off" class="field-input mt-2" placeholder="+33 6 12 34 56 78">
+            </div>
+            <div>
+              <label for="f-smsmsg" class="text-sm font-semibold">Message <span class="text-mute font-normal">(optionnel)</span></label>
+              <textarea id="f-smsmsg" rows="2" class="field-input mt-2" placeholder="Votre message…"></textarea>
+            </div>
+          </div>
+
           <!-- Wi-Fi -->
-          <div class="tab-panel hidden space-y-4" data-panel="wifi">
+          <div class="tab-panel hidden space-y-4" data-panel="wifi" role="tabpanel">
             <div>
-              <label class="text-sm font-semibold">Nom du réseau (SSID)</label>
-              <input id="f-ssid" type="text" class="field-input mt-2" placeholder="MonReseauWifi">
+              <label for="f-ssid" class="text-sm font-semibold">Nom du réseau (SSID)</label>
+              <input id="f-ssid" type="text" autocomplete="off" class="field-input mt-2" placeholder="MonReseauWifi">
             </div>
             <div>
-              <label class="text-sm font-semibold">Mot de passe</label>
-              <input id="f-wifipass" type="text" class="field-input mt-2" placeholder="Laisser vide si réseau ouvert">
+              <label for="f-wifipass" class="text-sm font-semibold">Mot de passe</label>
+              <input id="f-wifipass" type="text" autocomplete="off" class="field-input mt-2" placeholder="Mot de passe du réseau">
             </div>
             <div>
-              <label class="text-sm font-semibold">Sécurité</label>
+              <label for="f-wifitype" class="text-sm font-semibold">Sécurité</label>
               <select id="f-wifitype" class="field-input mt-2">
-                <option value="WPA">WPA / WPA2</option>
+                <option value="WPA">WPA / WPA2 / WPA3</option>
                 <option value="WEP">WEP</option>
                 <option value="nopass">Réseau ouvert</option>
               </select>
             </div>
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input id="f-wifihidden" type="checkbox" class="w-4 h-4 accent-[#3D5AFE]">
+              Réseau masqué
+            </label>
           </div>
 
           <!-- Email -->
-          <div class="tab-panel hidden space-y-4" data-panel="email">
+          <div class="tab-panel hidden space-y-4" data-panel="email" role="tabpanel">
             <div>
-              <label class="text-sm font-semibold">Adresse email</label>
-              <input id="f-email" type="email" class="field-input mt-2" placeholder="contact@votre-site.com">
+              <label for="f-email" class="text-sm font-semibold">Adresse email</label>
+              <input id="f-email" type="email" autocomplete="off" class="field-input mt-2" placeholder="contact@votre-site.com">
             </div>
             <div>
-              <label class="text-sm font-semibold">Sujet <span class="text-mute font-normal">(optionnel)</span></label>
+              <label for="f-subject" class="text-sm font-semibold">Sujet <span class="text-mute font-normal">(optionnel)</span></label>
               <input id="f-subject" type="text" class="field-input mt-2" placeholder="Objet de l'email">
+            </div>
+            <div>
+              <label for="f-body" class="text-sm font-semibold">Message <span class="text-mute font-normal">(optionnel)</span></label>
+              <textarea id="f-body" rows="2" class="field-input mt-2" placeholder="Corps de l'email…"></textarea>
             </div>
           </div>
 
           <!-- customization -->
           <div class="mt-8 pt-8 border-t border-black/5">
             <p class="font-display text-xl mb-5">Personnalisation</p>
-            <div class="flex flex-wrap items-center gap-6 mb-6">
+
+            <div class="flex flex-wrap items-center gap-6 mb-4">
               <div class="flex items-center gap-3">
-                <input id="f-colordark" type="color" value="#10131a">
+                <input id="f-colordark" type="color" value="#10131a" aria-label="Couleur du QR code">
                 <span class="text-xs text-mute">Couleur du QR</span>
               </div>
               <div class="flex items-center gap-3">
-                <input id="f-colorlight" type="color" value="#ffffff">
+                <input id="f-colorlight" type="color" value="#ffffff" aria-label="Couleur de fond">
                 <span class="text-xs text-mute">Couleur de fond</span>
               </div>
             </div>
 
+            <p id="contrast-warning" class="hidden text-xs text-amber bg-ink rounded-2xl px-4 py-3 mb-6" role="alert"></p>
+
             <div class="flex items-center justify-between mb-2">
-              <label class="text-sm font-semibold" for="f-size">Taille</label>
-              <span id="f-size-val" class="text-xs font-mono text-mute">260 px</span>
+              <label class="text-sm font-semibold" for="f-size">Taille de l'image téléchargée</label>
+              <span id="f-size-val" class="text-xs font-mono text-mute">≈ 1024 px</span>
             </div>
-            <input id="f-size" type="range" min="180" max="400" step="20" value="260" class="w-full cursor-pointer">
+            <input id="f-size" type="range" min="512" max="2048" step="256" value="1024" class="w-full cursor-pointer">
+            <p class="text-xs text-mute mt-2">L'aperçu est réduit à l'écran, mais le fichier est exporté en haute résolution.</p>
 
             <div class="mt-6">
-              <label class="text-sm font-semibold">Niveau de correction d'erreur</label>
+              <label for="f-correction" class="text-sm font-semibold">Niveau de correction d'erreur</label>
               <select id="f-correction" class="field-input mt-2">
                 <option value="L">Bas — pour un usage écran</option>
                 <option value="M" selected>Moyen — usage courant</option>
                 <option value="Q">Élevé — impression</option>
                 <option value="H">Maximal — logo ou surface abîmée</option>
               </select>
+              <p id="correction-note" class="hidden text-xs text-mute mt-2">Niveau maximal imposé tant qu'un logo est présent.</p>
+            </div>
+
+            <div class="mt-6">
+              <p class="text-sm font-semibold">Logo au centre <span class="text-mute font-normal">(optionnel)</span></p>
+              <div class="flex flex-wrap items-center gap-3 mt-2">
+                <label for="f-logo" class="btn-outline cursor-pointer border border-black/15 text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-paperdim flex items-center gap-2">
+                  <ion-icon name="image-outline"></ion-icon> Choisir une image
+                </label>
+                <input id="f-logo" type="file" accept="image/*" class="hidden">
+                <button type="button" id="logo-remove" class="hidden cursor-pointer text-sm text-mute hover:text-ink transition flex items-center gap-1.5">
+                  <ion-icon name="close-circle-outline"></ion-icon> Retirer le logo
+                </button>
+                <span id="logo-name" class="text-xs font-mono text-volt"></span>
+              </div>
+              <p id="logo-error" class="hidden text-xs text-red-500 mt-2"></p>
+              <p class="text-xs text-mute mt-2">PNG, JPG, SVG… (5 Mo max). Un logo simple et contrasté donne les meilleurs résultats.</p>
             </div>
           </div>
         </div>
 
         <!-- preview -->
-        <div class="flex flex-col items-center">
+        <div class="flex flex-col items-center lg:sticky lg:top-28 self-start">
           <div class="bg-paperdim rounded-4xl p-6 flex items-center justify-center w-full">
-            <div id="qr-preview"></div>
+            <div id="qr-wrap" class="w-full flex items-center justify-center">
+              <canvas id="qr-canvas" class="hidden" role="img" aria-label="Aperçu du QR code"></canvas>
+              <div id="qr-placeholder" class="hidden w-full max-w-[280px] aspect-square rounded-3xl border-2 border-dashed border-black/15 flex flex-col items-center justify-center text-mute">
+                <ion-icon name="qr-code-outline" class="text-5xl"></ion-icon>
+              </div>
+            </div>
           </div>
-          <p class="text-xs font-mono text-mute mt-4 text-center">Aperçu mis à jour en temps réel</p>
+          <p id="status" class="text-xs font-mono text-mute mt-4 text-center min-h-[2.5em]" aria-live="polite">Aperçu mis à jour en temps réel</p>
 
-          <div class="flex flex-col gap-3 w-full mt-6">
-            <button id="download-btn" class="btn-fill cursor-pointer bg-ink text-white font-semibold px-6 py-3.5 rounded-full flex items-center justify-center gap-2">
+          <div class="flex flex-col gap-3 w-full mt-4">
+            <button type="button" id="download-png" class="btn-fill cursor-pointer bg-ink text-white font-semibold px-6 py-3.5 rounded-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
               <ion-icon name="download-outline"></ion-icon> Télécharger le PNG
             </button>
-            <button id="copy-btn" class="btn-outline cursor-pointer border border-black/15 font-semibold px-6 py-3.5 rounded-full hover:bg-paperdim flex items-center justify-center gap-2">
+            <button type="button" id="download-svg" class="btn-outline cursor-pointer border border-black/15 font-semibold px-6 py-3.5 rounded-full hover:bg-paperdim flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+              <ion-icon name="download-outline"></ion-icon> Télécharger le SVG
+            </button>
+            <button type="button" id="copy-btn" class="btn-outline cursor-pointer border border-black/15 font-semibold px-6 py-3.5 rounded-full hover:bg-paperdim flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
               <ion-icon name="copy-outline"></ion-icon> Copier le contenu encodé
             </button>
           </div>
@@ -317,29 +389,27 @@
     <div class="max-w-7xl mx-auto px-6 lg:px-10">
       <div class="reveal mb-16 max-w-lg">
         <span class="text-xs font-mono uppercase tracking-widest text-amber">Le principe</span>
-        <h2 class="font-display text-4xl sm:text-5xl mt-3">Trois étapes,</h2>
+        <h2 class="font-display text-4xl sm:text-5xl mt-3">Trois étapes, c'est tout.</h2>
       </div>
       <div class="grid md:grid-cols-3 gap-10">
         <div class="reveal">
           <span class="font-display text-5xl text-white/15">01</span>
           <h3 class="font-display text-2xl mt-5">Choisissez un type</h3>
-          <p class="text-white/55 mt-3">Lien, texte, Wi-Fi ou email : sélectionnez l'onglet qui correspond à votre besoin.</p>
+          <p class="text-white/55 mt-3">Lien, texte, WhatsApp, téléphone, SMS, Wi-Fi ou email : sélectionnez l'onglet qui correspond à votre besoin.</p>
         </div>
         <div class="reveal">
           <span class="font-display text-5xl text-white/15">02</span>
           <h3 class="font-display text-2xl mt-5">Personnalisez le rendu</h3>
-          <p class="text-white/55 mt-3">Ajustez les couleurs, la taille et le niveau de correction selon l'usage prévu.</p>
+          <p class="text-white/55 mt-3">Ajustez les couleurs, ajoutez votre logo et choisissez la taille et le niveau de correction.</p>
         </div>
         <div class="reveal">
           <span class="font-display text-5xl text-white/15">03</span>
-          <h3 class="font-display text-2xl mt-5">Téléchargez le PNG</h3>
-          <p class="text-white/55 mt-3">Récupérez votre QR code en haute qualité, prêt à imprimer ou à partager.</p>
+          <h3 class="font-display text-2xl mt-5">Téléchargez le fichier</h3>
+          <p class="text-white/55 mt-3">Récupérez votre QR code en PNG haute résolution ou en SVG, prêt à imprimer ou à partager.</p>
         </div>
       </div>
     </div>
   </section>
-
- 
 
   <!-- ============ FAQ ============ -->
   <section id="faq" class="bg-paperdim py-28">
@@ -355,34 +425,47 @@
             Mes données sont-elles envoyées à un serveur ?
             <ion-icon name="chevron-down-outline" class="chev text-mute"></ion-icon>
           </summary>
-          <p class="text-mute text-sm mt-4">Non. Le QR code est entièrement généré dans votre navigateur. Le contenu que vous saisissez n'est ni transmis ni conservé par Facilo.</p>
+          <p class="text-mute text-sm mt-4">Non. Le QR code est entièrement généré dans votre navigateur. Le contenu que vous saisissez et le logo que vous choisissez ne sont ni transmis ni conservés par Facilo.</p>
+        </details>
+        <details class="accordion-item bg-white rounded-3xl border border-black/5 p-6 cursor-pointer">
+          <summary class="flex items-center justify-between font-semibold cursor-pointer list-none">
+            PNG ou SVG : lequel choisir ?
+            <ion-icon name="chevron-down-outline" class="chev text-mute"></ion-icon>
+          </summary>
+          <p class="text-mute text-sm mt-4">Le PNG convient pour le web, les réseaux sociaux et les documents. Le SVG est un format vectoriel : il reste parfaitement net à toutes les tailles, idéal pour une affiche, un flyer ou une impression grand format.</p>
+        </details>
+        <details class="accordion-item bg-white rounded-3xl border border-black/5 p-6 cursor-pointer">
+          <summary class="flex items-center justify-between font-semibold cursor-pointer list-none">
+            Comment saisir un numéro WhatsApp ?
+            <ion-icon name="chevron-down-outline" class="chev text-mute"></ion-icon>
+          </summary>
+          <p class="text-mute text-sm mt-4">Saisissez l'indicatif du pays suivi du numéro, sans le « + » et sans le « 0 » initial. Par exemple, le 06 12 34 56 78 en France devient 33612345678. Le scan ouvre directement une conversation WhatsApp avec ce numéro.</p>
         </details>
         <details class="accordion-item bg-white rounded-3xl border border-black/5 p-6 cursor-pointer">
           <summary class="flex items-center justify-between font-semibold cursor-pointer list-none">
             Le QR code Wi-Fi fonctionne-t-il avec tous les téléphones ?
             <ion-icon name="chevron-down-outline" class="chev text-mute"></ion-icon>
           </summary>
-          <p class="text-mute text-sm mt-4">La plupart des smartphones récents (iOS et Android) reconnaissent automatiquement ce format et proposent de rejoindre le réseau en un scan.</p>
+          <p class="text-mute text-sm mt-4">La plupart des smartphones récents (iOS et Android) reconnaissent automatiquement ce format et proposent de rejoindre le réseau en un scan. Les caractères spéciaux du nom ou du mot de passe sont gérés automatiquement.</p>
         </details>
         <details class="accordion-item bg-white rounded-3xl border border-black/5 p-6 cursor-pointer">
           <summary class="flex items-center justify-between font-semibold cursor-pointer list-none">
-            Puis-je changer les couleurs sans risquer de casser le QR code ?
+            Puis-je changer les couleurs ou ajouter un logo sans risquer de casser le QR code ?
             <ion-icon name="chevron-down-outline" class="chev text-mute"></ion-icon>
           </summary>
-          <p class="text-mute text-sm mt-4">Oui, tant que le contraste entre le motif et le fond reste suffisant. Évitez deux teintes trop proches en luminosité.</p>
+          <p class="text-mute text-sm mt-4">Oui, tant que le contraste entre le motif et le fond reste suffisant : gardez un motif foncé sur un fond clair. Avec un logo, le niveau de correction maximal est appliqué automatiquement, et le logo reste petit au centre. Testez toujours votre QR code avec un téléphone avant de l'imprimer.</p>
         </details>
         <details class="accordion-item bg-white rounded-3xl border border-black/5 p-6 cursor-pointer">
           <summary class="flex items-center justify-between font-semibold cursor-pointer list-none">
             Y a-t-il une limite de caractères ?
             <ion-icon name="chevron-down-outline" class="chev text-mute"></ion-icon>
           </summary>
-          <p class="text-mute text-sm mt-4">Un QR code peut contenir jusqu'à quelques milliers de caractères, mais pour rester lisible facilement, privilégiez des contenus courts comme un lien plutôt qu'un long texte.</p>
+          <p class="text-mute text-sm mt-4">Un QR code peut contenir jusqu'à quelques milliers de caractères, mais plus le contenu est long, plus le motif est dense et difficile à scanner. Privilégiez des contenus courts, comme un lien. Le logo et un niveau de correction élevé réduisent aussi la capacité.</p>
         </details>
       </div>
     </div>
   </section>
 
- 
   <!-- ============ CTA ============ -->
   <section class="max-w-7xl mx-auto px-6 lg:px-10 pb-24">
     <div class="reveal-scale relative bg-ink text-white rounded-5xl px-10 py-20 text-center overflow-hidden">
@@ -411,15 +494,14 @@
         </a>
         <p class="mt-5 max-w-xs text-sm">Des petits outils du quotidien, réunis au même endroit, pensés pour aller vite.</p>
         <div class="flex items-center gap-3 mt-6">
-          <a href="mailto:alidoufranck@gmail.com"
-   class="cursor-pointer w-10 h-10 rounded-full border border-white/15 flex items-center justify-center hover:bg-white/10 transition">
-    <ion-icon name="mail-outline"></ion-icon>
-</a>
+          <a href="mailto:alidoufranck@gmail.com" class="cursor-pointer w-10 h-10 rounded-full border border-white/15 flex items-center justify-center hover:bg-white/10 transition">
+            <ion-icon name="mail-outline"></ion-icon>
+          </a>
           <a href="https://github.com/alidoufranck-ops" class="cursor-pointer w-10 h-10 rounded-full border border-white/15 flex items-center justify-center hover:bg-white/10 transition"><ion-icon name="logo-github"></ion-icon></a>
           <a href="https://www.linkedin.com/in/alidou-franck-8abb083a9" class="cursor-pointer w-10 h-10 rounded-full border border-white/15 flex items-center justify-center hover:bg-white/10 transition"><ion-icon name="logo-linkedin"></ion-icon></a>
         </div>
       </div>
-     
+
       <div>
         <p class="text-white font-semibold mb-4 text-sm">Ressources</p>
         <ul class="space-y-3 text-sm">
@@ -428,13 +510,9 @@
         </ul>
       </div>
     </div>
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 text-xs text-white/40">
-      
-      
-    </div>
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 text-xs text-white/40"></div>
   </div>
 </footer>
-
 
 <script>
   // ---------- custom cursor ----------
@@ -467,113 +545,464 @@
   document.querySelectorAll('.reveal, .reveal-scale').forEach(el => io.observe(el));
 
   // ================= OUTIL : QR CODE =================
+
+  // Encodage UTF-8 : accents, emojis et caractères spéciaux bien pris en charge
+  if (typeof qrcode !== 'undefined') {
+    qrcode.stringToBytes = (s) => Array.from(new TextEncoder().encode(s));
+  }
+
+  const MARGIN = 4; // zone de silence (en modules), recommandée par la norme
+
+  // ---------- éléments ----------
+  const $ = (id) => document.getElementById(id);
   const tabButtons = document.querySelectorAll('.tab-btn');
   const tabPanels = document.querySelectorAll('.tab-panel');
-  let activeTab = 'lien';
 
+  const fUrl = $('f-url'), fText = $('f-text');
+  const fWaNumber = $('f-wanumber'), fWaMsg = $('f-wamsg');
+  const fTelNumber = $('f-telnumber');
+  const fSmsNumber = $('f-smsnumber'), fSmsMsg = $('f-smsmsg');
+  const fSsid = $('f-ssid'), fWifipass = $('f-wifipass'), fWifitype = $('f-wifitype'), fWifiHidden = $('f-wifihidden');
+  const fEmail = $('f-email'), fSubject = $('f-subject'), fBody = $('f-body');
+  const fColorDark = $('f-colordark'), fColorLight = $('f-colorlight');
+  const fSize = $('f-size'), fSizeVal = $('f-size-val');
+  const fCorrection = $('f-correction'), correctionNote = $('correction-note');
+  const fLogo = $('f-logo'), logoRemove = $('logo-remove'), logoName = $('logo-name'), logoError = $('logo-error');
+  const contrastWarning = $('contrast-warning');
+
+  const qrCanvas = $('qr-canvas'), qrPlaceholder = $('qr-placeholder'), statusEl = $('status');
+  const downloadPng = $('download-png'), downloadSvg = $('download-svg'), copyBtn = $('copy-btn');
+  const copyOriginalHTML = copyBtn.innerHTML;
+
+  const DEFAULT_STATUS = 'Aperçu mis à jour en temps réel';
+
+  let activeTab = 'lien';
+  let current = null;        // { qr, content }
+  let logo = null;           // { dataUrl, w, h, canvas }
+  let savedCorrection = fCorrection.value;
+
+  // ---------- onglets ----------
   tabButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       activeTab = btn.dataset.tab;
       tabButtons.forEach(b => {
-        b.classList.toggle('active', b === btn);
-        b.classList.toggle('text-mute', b !== btn);
+        const isActive = b === btn;
+        b.classList.toggle('active', isActive);
+        b.classList.toggle('text-mute', !isActive);
+        b.setAttribute('aria-selected', isActive ? 'true' : 'false');
       });
       tabPanels.forEach(p => p.classList.toggle('hidden', p.dataset.panel !== activeTab));
-      generate();
+      update();
     });
   });
 
-  const fUrl = document.getElementById('f-url');
-  const fText = document.getElementById('f-text');
-  const fSsid = document.getElementById('f-ssid');
-  const fWifipass = document.getElementById('f-wifipass');
-  const fWifitype = document.getElementById('f-wifitype');
-  const fEmail = document.getElementById('f-email');
-  const fSubject = document.getElementById('f-subject');
-  const fColorDark = document.getElementById('f-colordark');
-  const fColorLight = document.getElementById('f-colorlight');
-  const fSize = document.getElementById('f-size');
-  const fSizeVal = document.getElementById('f-size-val');
-  const fCorrection = document.getElementById('f-correction');
-  const previewEl = document.getElementById('qr-preview');
-  const downloadBtn = document.getElementById('download-btn');
-  const copyBtn = document.getElementById('copy-btn');
+  // ---------- construction du contenu ----------
+  const val = (el) => el.value.trim();
+  const onlyDigits = (s) => s.replace(/\D/g, '');
+  const escapeWifi = (s) => s.replace(/([\\;,:"])/g, '\\$1');
+  const isValidEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 
-  const correctionLevels = { L: QRCode.CorrectLevel.L, M: QRCode.CorrectLevel.M, Q: QRCode.CorrectLevel.Q, H: QRCode.CorrectLevel.H };
-
+  // Retourne { content } ou { empty: true, message } ou { error: 'message' }
   function buildContent(){
-    switch(activeTab){
-      case 'lien':
-        return (fUrl.value || 'https://facilo.app').trim();
-      case 'texte':
-        return (fText.value || ' ').trim() || ' ';
+    switch (activeTab) {
+
+      case 'lien': {
+        let u = val(fUrl);
+        if (!u) return { empty: true, message: 'Saisissez une adresse pour générer le QR code.' };
+        if (!/^[a-z][a-z0-9+.\-]*:\/\//i.test(u) && !/^(mailto|tel|sms):/i.test(u)) u = 'https://' + u;
+        try {
+          const parsed = new URL(u);
+          if (/^https?:$/.test(parsed.protocol) && !(parsed.hostname.includes('.') || parsed.hostname === 'localhost')) {
+            return { error: 'Adresse invalide : vérifiez le nom du site.' };
+          }
+        } catch (e) {
+          return { error: 'Adresse invalide : vérifiez le lien saisi.' };
+        }
+        return { content: u };
+      }
+
+      case 'texte': {
+        const t = val(fText);
+        if (!t) return { empty: true, message: 'Saisissez un texte pour générer le QR code.' };
+        return { content: t };
+      }
+
+      case 'whatsapp': {
+        const raw = val(fWaNumber);
+        if (!raw) return { empty: true, message: 'Saisissez un numéro WhatsApp.' };
+        const d = onlyDigits(raw).replace(/^00/, '');
+        if (d.length < 8 || d.length > 15) return { error: 'Numéro invalide : indicatif du pays + numéro (8 à 15 chiffres).' };
+        const msg = val(fWaMsg);
+        return { content: 'https://wa.me/' + d + (msg ? '?text=' + encodeURIComponent(msg) : '') };
+      }
+
+      case 'tel': {
+        const raw = val(fTelNumber);
+        if (!raw) return { empty: true, message: 'Saisissez un numéro de téléphone.' };
+        const d = onlyDigits(raw).replace(/^00/, '');
+        if (d.length < 6 || d.length > 15) return { error: 'Numéro invalide (6 à 15 chiffres).' };
+        const plus = raw.startsWith('+') || raw.startsWith('00');
+        return { content: 'tel:' + (plus ? '+' : '') + d };
+      }
+
+      case 'sms': {
+        const raw = val(fSmsNumber);
+        if (!raw) return { empty: true, message: 'Saisissez le numéro du destinataire.' };
+        const d = onlyDigits(raw).replace(/^00/, '');
+        if (d.length < 6 || d.length > 15) return { error: 'Numéro invalide (6 à 15 chiffres).' };
+        const plus = raw.startsWith('+') || raw.startsWith('00');
+        return { content: 'SMSTO:' + (plus ? '+' : '') + d + ':' + val(fSmsMsg) };
+      }
+
       case 'wifi': {
-        const ssid = fSsid.value.trim() || 'MonReseauWifi';
-        const pass = fWifipass.value.trim();
+        const ssid = val(fSsid);
         const type = fWifitype.value;
-        if (type === 'nopass') return `WIFI:T:nopass;S:${ssid};;`;
-        return `WIFI:T:${type};S:${ssid};P:${pass};;`;
+        const pass = fWifipass.value; // pas de trim : un mot de passe peut contenir des espaces
+        if (!ssid) return { empty: true, message: 'Saisissez le nom du réseau Wi-Fi.' };
+        if (type !== 'nopass' && !pass) return { empty: true, message: 'Saisissez le mot de passe, ou choisissez « Réseau ouvert ».' };
+        const hidden = fWifiHidden.checked ? 'H:true;' : '';
+        if (type === 'nopass') return { content: `WIFI:T:nopass;S:${escapeWifi(ssid)};${hidden};` };
+        return { content: `WIFI:T:${type};S:${escapeWifi(ssid)};P:${escapeWifi(pass)};${hidden};` };
       }
+
       case 'email': {
-        const addr = fEmail.value.trim() || 'contact@facilo.app';
-        const subj = encodeURIComponent(fSubject.value.trim());
-        return subj ? `mailto:${addr}?subject=${subj}` : `mailto:${addr}`;
+        const addr = val(fEmail);
+        if (!addr) return { empty: true, message: 'Saisissez une adresse email.' };
+        if (!isValidEmail(addr)) return { error: 'Adresse email invalide.' };
+        const parts = [];
+        if (val(fSubject)) parts.push('subject=' + encodeURIComponent(val(fSubject)));
+        if (val(fBody)) parts.push('body=' + encodeURIComponent(val(fBody)));
+        return { content: 'mailto:' + addr + (parts.length ? '?' + parts.join('&') : '') };
       }
-      default:
-        return 'https://facilo.app';
+    }
+    return { empty: true, message: '' };
+  }
+
+  // ---------- génération du QR ----------
+  function createQR(text, level){
+    const q = qrcode(0, level); // 0 = taille automatique
+    q.addData(text, 'Byte');
+    q.make();
+    return q;
+  }
+
+  function effectiveLevel(){
+    return logo ? 'H' : fCorrection.value;
+  }
+
+  // Géométrie du logo, en unités "module"
+  function logoGeometry(n, lw, lh){
+    const total = n + MARGIN * 2;
+    const size = n * 0.22;          // zone du logo (~22 % du côté du QR)
+    const pad = size * 0.14;        // fond autour du logo
+    const box = size + pad * 2;
+    const bx = (total - box) / 2;
+    const scale = Math.min(size / lw, size / lh);
+    const w = lw * scale, h = lh * scale;
+    return { total, box, bx, radius: box * 0.2, ix: (total - w) / 2, iy: (total - h) / 2, w, h };
+  }
+
+  function roundRectPath(ctx, x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawQR(canvas, qr, px, dark, light){
+    const n = qr.getModuleCount();
+    const total = n + MARGIN * 2;
+    const cell = px / total;
+
+    canvas.width = px;
+    canvas.height = px;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = light;
+    ctx.fillRect(0, 0, px, px);
+
+    ctx.fillStyle = dark;
+    for (let r = 0; r < n; r++) {
+      for (let c = 0; c < n; c++) {
+        if (!qr.isDark(r, c)) continue;
+        const x0 = Math.round((c + MARGIN) * cell);
+        const x1 = Math.round((c + MARGIN + 1) * cell);
+        const y0 = Math.round((r + MARGIN) * cell);
+        const y1 = Math.round((r + MARGIN + 1) * cell);
+        ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+      }
+    }
+
+    if (logo) {
+      const g = logoGeometry(n, logo.w, logo.h);
+      ctx.fillStyle = light;
+      roundRectPath(ctx, g.bx * cell, g.bx * cell, g.box * cell, g.box * cell, g.radius * cell);
+      ctx.fill();
+      ctx.drawImage(logo.canvas, g.ix * cell, g.iy * cell, g.w * cell, g.h * cell);
     }
   }
 
-  let qr = null;
-  function generate(){
-    const content = buildContent();
-    const size = parseInt(fSize.value, 10);
-    previewEl.innerHTML = '';
-    qr = new QRCode(previewEl, {
-      text: content,
-      width: size,
-      height: size,
-      colorDark: fColorDark.value,
-      colorLight: fColorLight.value,
-      correctLevel: correctionLevels[fCorrection.value]
-    });
+  function buildSVG(qr, px, dark, light){
+    const n = qr.getModuleCount();
+    const total = n + MARGIN * 2;
+    let d = '';
+    for (let r = 0; r < n; r++) {
+      let c = 0;
+      while (c < n) {
+        if (qr.isDark(r, c)) {
+          const start = c;
+          while (c < n && qr.isDark(r, c)) c++;
+          d += `M${start + MARGIN} ${r + MARGIN}h${c - start}v1h-${c - start}z`;
+        } else {
+          c++;
+        }
+      }
+    }
+
+    let svg = `<?xml version="1.0" encoding="UTF-8"?>\n` +
+      `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ` +
+      `width="${px}" height="${px}" viewBox="0 0 ${total} ${total}" shape-rendering="crispEdges">` +
+      `<rect width="${total}" height="${total}" fill="${light}"/>` +
+      `<path d="${d}" fill="${dark}"/>`;
+
+    if (logo) {
+      const g = logoGeometry(n, logo.w, logo.h);
+      svg += `<rect x="${g.bx}" y="${g.bx}" width="${g.box}" height="${g.box}" rx="${g.radius}" fill="${light}"/>` +
+             `<image x="${g.ix}" y="${g.iy}" width="${g.w}" height="${g.h}" href="${logo.dataUrl}" xlink:href="${logo.dataUrl}"/>`;
+    }
+    return svg + `</svg>`;
+  }
+
+  // ---------- affichage ----------
+  function setStatus(text, isError){
+    statusEl.textContent = text;
+    statusEl.classList.toggle('text-red-500', !!isError);
+    statusEl.classList.toggle('text-mute', !isError);
+  }
+
+  function setActionsEnabled(enabled){
+    downloadPng.disabled = !enabled;
+    downloadSvg.disabled = !enabled;
+    copyBtn.disabled = !enabled;
+  }
+
+  function showPlaceholder(message, isError){
+    current = null;
+    qrCanvas.classList.add('hidden');
+    qrPlaceholder.classList.remove('hidden');
+    setStatus(message, isError);
+    setActionsEnabled(false);
+  }
+
+  function update(){
+    if (typeof qrcode === 'undefined') {
+      showPlaceholder('La librairie de génération n\'a pas pu se charger. Vérifiez votre connexion.', true);
+      return;
+    }
+
+    const res = buildContent();
+    if (res.empty) { showPlaceholder(res.message, false); return; }
+    if (res.error) { showPlaceholder(res.error, true); return; }
+
+    try {
+      const qr = createQR(res.content, effectiveLevel());
+      const total = qr.getModuleCount() + MARGIN * 2;
+      const px = Math.ceil(560 / total) * total; // modules de taille entière = rendu net
+      drawQR(qrCanvas, qr, px, fColorDark.value, fColorLight.value);
+
+      current = { qr, content: res.content };
+      qrPlaceholder.classList.add('hidden');
+      qrCanvas.classList.remove('hidden');
+      setStatus(DEFAULT_STATUS, false);
+      setActionsEnabled(true);
+    } catch (e) {
+      const tooLong = /overflow/i.test(String(e && e.message));
+      showPlaceholder(
+        tooLong
+          ? 'Contenu trop long pour un QR code' + (logo || fCorrection.value === 'H' ? ' (le niveau de correction maximal réduit la capacité)' : '') + '. Raccourcissez-le.'
+          : 'Impossible de générer le QR code avec ce contenu.',
+        true
+      );
+    }
   }
 
   let debounceTimer;
-  function scheduleGenerate(){
+  function scheduleUpdate(){
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(generate, 220);
+    debounceTimer = setTimeout(update, 150);
   }
 
-  [fUrl, fText, fSsid, fWifipass, fEmail, fSubject].forEach(el => el && el.addEventListener('input', scheduleGenerate));
-  [fWifitype, fCorrection].forEach(el => el.addEventListener('change', generate));
-  [fColorDark, fColorLight].forEach(el => el.addEventListener('input', generate));
-  fSize.addEventListener('input', () => {
-    fSizeVal.textContent = fSize.value + ' px';
-    scheduleGenerate();
+  // ---------- contraste des couleurs ----------
+  function luminance(hex){
+    const n = parseInt(hex.slice(1), 16);
+    const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => {
+      v /= 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+  }
+
+  function checkContrast(){
+    const ld = luminance(fColorDark.value);
+    const ll = luminance(fColorLight.value);
+    const ratio = (Math.max(ld, ll) + 0.05) / (Math.min(ld, ll) + 0.05);
+    let msg = '';
+    if (ratio < 3) {
+      msg = 'Contraste trop faible : ce QR code risque de ne pas être lu. Éloignez la couleur du motif de celle du fond.';
+    } else if (ld > ll) {
+      msg = 'Motif plus clair que le fond : certains scanners ne lisent pas les QR codes inversés. Préférez un motif foncé sur fond clair.';
+    }
+    contrastWarning.textContent = msg;
+    contrastWarning.classList.toggle('hidden', !msg);
+  }
+
+  // ---------- logo ----------
+  function showLogoError(msg){
+    logoError.textContent = msg;
+    logoError.classList.toggle('hidden', !msg);
+  }
+
+  function clearLogo(){
+    logo = null;
+    fLogo.value = '';
+    logoName.textContent = '';
+    logoRemove.classList.add('hidden');
+    fCorrection.disabled = false;
+    fCorrection.value = savedCorrection;
+    correctionNote.classList.add('hidden');
+    showLogoError('');
+    update();
+  }
+
+  fLogo.addEventListener('change', () => {
+    showLogoError('');
+    const file = fLogo.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      fLogo.value = '';
+      showLogoError('Ce fichier n\'est pas une image.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      fLogo.value = '';
+      showLogoError('Image trop lourde (5 Mo maximum).');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => showLogoError('Impossible de lire cette image.');
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => { fLogo.value = ''; showLogoError('Impossible de lire cette image.'); };
+      img.onload = () => {
+        // on réduit le logo (256 px max) : plus léger, et idéal pour l'export SVG
+        const iw = img.naturalWidth || 256;
+        const ih = img.naturalHeight || 256;
+        const s = Math.min(1, 256 / Math.max(iw, ih));
+        const w = Math.max(1, Math.round(iw * s));
+        const h = Math.max(1, Math.round(ih * s));
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+
+        if (!logo) savedCorrection = fCorrection.value;
+        logo = { canvas: c, w, h, dataUrl: c.toDataURL('image/png') };
+
+        fCorrection.value = 'H';
+        fCorrection.disabled = true;
+        correctionNote.classList.remove('hidden');
+        logoName.textContent = file.name;
+        logoRemove.classList.remove('hidden');
+        update();
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
   });
 
-  downloadBtn.addEventListener('click', () => {
-    const canvas = previewEl.querySelector('canvas');
-    const img = previewEl.querySelector('img');
-    const dataUrl = canvas ? canvas.toDataURL('image/png') : (img ? img.src : null);
-    if (!dataUrl) return;
+  logoRemove.addEventListener('click', clearLogo);
+
+  // ---------- événements des champs ----------
+  [fUrl, fText, fWaNumber, fWaMsg, fTelNumber, fSmsNumber, fSmsMsg, fSsid, fWifipass, fEmail, fSubject, fBody]
+    .forEach(el => el.addEventListener('input', scheduleUpdate));
+
+  fWifitype.addEventListener('change', () => {
+    const open = fWifitype.value === 'nopass';
+    fWifipass.disabled = open;
+    if (open) fWifipass.value = '';
+    update();
+  });
+  fWifiHidden.addEventListener('change', update);
+  fCorrection.addEventListener('change', () => { savedCorrection = fCorrection.value; update(); });
+  [fColorDark, fColorLight].forEach(el => el.addEventListener('input', () => { checkContrast(); update(); }));
+  fSize.addEventListener('input', () => { fSizeVal.textContent = '≈ ' + fSize.value + ' px'; });
+
+  // ---------- téléchargements ----------
+  function downloadBlob(blob, filename){
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = dataUrl; a.download = 'facilo-qrcode.png';
-    document.body.appendChild(a); a.click(); a.remove();
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
+
+  downloadPng.addEventListener('click', () => {
+    if (!current) return;
+    const n = current.qr.getModuleCount();
+    const total = n + MARGIN * 2;
+    const target = parseInt(fSize.value, 10);
+    const px = Math.ceil(target / total) * total; // cellules entières = bords nets
+    const canvas = document.createElement('canvas');
+    drawQR(canvas, current.qr, px, fColorDark.value, fColorLight.value);
+    canvas.toBlob((blob) => {
+      if (blob) downloadBlob(blob, 'facilo-qrcode-' + activeTab + '.png');
+    }, 'image/png');
   });
 
+  downloadSvg.addEventListener('click', () => {
+    if (!current) return;
+    const svg = buildSVG(current.qr, parseInt(fSize.value, 10), fColorDark.value, fColorLight.value);
+    downloadBlob(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }), 'facilo-qrcode-' + activeTab + '.svg');
+  });
+
+  // ---------- copie ----------
+  let copyTimer;
   copyBtn.addEventListener('click', async () => {
-    const content = buildContent();
+    if (!current) return;
+    let ok = false;
     try {
-      await navigator.clipboard.writeText(content);
-      const original = copyBtn.innerHTML;
-      copyBtn.innerHTML = '<ion-icon name="checkmark-outline"></ion-icon> Copié !';
-      setTimeout(() => { copyBtn.innerHTML = original; }, 1600);
-    } catch(err){ /* clipboard unavailable, silently ignore */ }
+      await navigator.clipboard.writeText(current.content);
+      ok = true;
+    } catch (err) {
+      // repli pour les navigateurs / contextes sans accès au presse-papiers
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = current.content;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        ok = document.execCommand('copy');
+        ta.remove();
+      } catch (e) { ok = false; }
+    }
+    clearTimeout(copyTimer);
+    copyBtn.innerHTML = ok
+      ? '<ion-icon name="checkmark-outline"></ion-icon> Copié !'
+      : '<ion-icon name="alert-circle-outline"></ion-icon> Copie impossible';
+    copyTimer = setTimeout(() => { copyBtn.innerHTML = copyOriginalHTML; }, 1800);
   });
 
-  generate();
+  // ---------- initialisation ----------
+  checkContrast();
+  update();
 </script>
 
 </body>
