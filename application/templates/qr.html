@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Générateur de QR Code — Facilo</title>
-<meta name="description" content="Créez un QR code pour un lien, un texte, WhatsApp, un téléphone, un SMS, un Wi-Fi ou un email, avec vos couleurs et votre logo, directement dans votre navigateur.">
+<meta name="description" content="Créez un QR code pour un lien, un texte, un PDF, WhatsApp, un téléphone, un SMS, un Wi-Fi ou un email, avec vos couleurs et votre logo.">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -39,7 +39,7 @@
 
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-<!-- Générateur de QR code (remplace qrcodejs : gère mieux l'UTF-8 et permet l'export SVG) -->
+<!-- Générateur de QR code (gère l'UTF-8 et permet l'export SVG) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 
 <style>
@@ -167,13 +167,13 @@
     </a>
 
     <h1 class="font-display text-5xl sm:text-6xl leading-[1.03] mt-7">
-      Un lien, un texte, <span class="text-volt">un QR code.</span>
+      Un lien, un PDF, <span class="text-volt">un QR code.</span>
     </h1>
     <p class="text-white/60 text-lg mt-6 max-w-xl mx-auto">
-      Générez un QR code pour un site, WhatsApp, un téléphone, un SMS, un Wi-Fi ou un email, avec vos couleurs et votre logo, prêt à télécharger en PNG ou SVG.
+      Générez un QR code pour un site, un PDF, WhatsApp, un téléphone, un SMS, un Wi-Fi ou un email, avec vos couleurs et votre logo, prêt à télécharger en PNG ou SVG.
     </p>
     <div class="flex flex-wrap justify-center items-center gap-3 mt-8 text-xs font-mono text-white/50">
-      <span class="flex items-center gap-1.5 border border-white/10 px-3 py-1.5 rounded-full"><ion-icon name="shield-checkmark-outline" class="text-volt"></ion-icon> 100% local</span>
+      <span class="flex items-center gap-1.5 border border-white/10 px-3 py-1.5 rounded-full"><ion-icon name="shield-checkmark-outline" class="text-volt"></ion-icon> Généré dans votre navigateur</span>
       <span class="flex items-center gap-1.5 border border-white/10 px-3 py-1.5 rounded-full"><ion-icon name="infinite-outline" class="text-amber"></ion-icon> Illimité</span>
       <span class="flex items-center gap-1.5 border border-white/10 px-3 py-1.5 rounded-full"><ion-icon name="pricetag-outline" class="text-volt"></ion-icon> Gratuit</span>
     </div>
@@ -199,6 +199,9 @@
             </button>
             <button type="button" role="tab" aria-selected="false" data-tab="texte" class="tab-btn cursor-pointer text-sm font-semibold px-4 py-2.5 rounded-full border border-black/10 flex items-center gap-2 text-mute">
               <ion-icon name="chatbox-outline"></ion-icon> Texte
+            </button>
+            <button type="button" role="tab" aria-selected="false" data-tab="pdf" class="tab-btn cursor-pointer text-sm font-semibold px-4 py-2.5 rounded-full border border-black/10 flex items-center gap-2 text-mute">
+              <ion-icon name="document-text-outline"></ion-icon> PDF
             </button>
             <button type="button" role="tab" aria-selected="false" data-tab="whatsapp" class="tab-btn cursor-pointer text-sm font-semibold px-4 py-2.5 rounded-full border border-black/10 flex items-center gap-2 text-mute">
               <ion-icon name="logo-whatsapp"></ion-icon> WhatsApp
@@ -228,6 +231,26 @@
           <div class="tab-panel hidden" data-panel="texte" role="tabpanel">
             <label for="f-text" class="text-sm font-semibold">Votre texte</label>
             <textarea id="f-text" rows="4" class="field-input mt-2" placeholder="Écrivez le texte à encoder…">Merci de votre visite !</textarea>
+          </div>
+
+          <!-- PDF -->
+          <div class="tab-panel hidden space-y-4" data-panel="pdf" role="tabpanel">
+            <div>
+              <label for="f-pdfurl" class="text-sm font-semibold">Lien du PDF</label>
+              <input id="f-pdfurl" type="text" inputmode="url" autocomplete="off" class="field-input mt-2" placeholder="https://votre-site.com/document.pdf">
+              <p class="text-xs text-mute mt-2">Collez le lien d'un PDF déjà en ligne (Drive, Dropbox, votre site…), ou envoyez un fichier ci-dessous.</p>
+            </div>
+            <div>
+              <div class="flex flex-wrap items-center gap-3">
+                <label for="f-pdffile" class="btn-outline cursor-pointer border border-black/15 text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-paperdim flex items-center gap-2">
+                  <ion-icon name="cloud-upload-outline"></ion-icon> Envoyer un PDF
+                </label>
+                <input id="f-pdffile" type="file" accept="application/pdf,.pdf" class="hidden">
+                <span id="pdf-name" class="text-xs font-mono text-volt"></span>
+              </div>
+              <p id="pdf-error" class="hidden text-xs text-red-500 mt-2" role="alert"></p>
+              <p class="text-xs text-mute mt-2">PDF, 10 Mo max. Le fichier est hébergé sur Facilo pour que le QR code reste lisible. Au scan, le téléphone ouvre le PDF.</p>
+            </div>
           </div>
 
           <!-- WhatsApp -->
@@ -395,7 +418,7 @@
         <div class="reveal">
           <span class="font-display text-5xl text-white/15">01</span>
           <h3 class="font-display text-2xl mt-5">Choisissez un type</h3>
-          <p class="text-white/55 mt-3">Lien, texte, WhatsApp, téléphone, SMS, Wi-Fi ou email : sélectionnez l'onglet qui correspond à votre besoin.</p>
+          <p class="text-white/55 mt-3">Lien, texte, PDF, WhatsApp, téléphone, SMS, Wi-Fi ou email : sélectionnez l'onglet qui correspond à votre besoin.</p>
         </div>
         <div class="reveal">
           <span class="font-display text-5xl text-white/15">02</span>
@@ -425,7 +448,14 @@
             Mes données sont-elles envoyées à un serveur ?
             <ion-icon name="chevron-down-outline" class="chev text-mute"></ion-icon>
           </summary>
-          <p class="text-mute text-sm mt-4">Non. Le QR code est entièrement généré dans votre navigateur. Le contenu que vous saisissez et le logo que vous choisissez ne sont ni transmis ni conservés par Facilo.</p>
+          <p class="text-mute text-sm mt-4">Non, sauf pour l'onglet PDF si vous envoyez un fichier : il faut alors l'héberger pour que le QR code puisse l'ouvrir. Pour tous les autres types, le QR code est entièrement généré dans votre navigateur, et le contenu saisi ainsi que le logo choisi ne sont ni transmis ni conservés par Facilo.</p>
+        </details>
+        <details class="accordion-item bg-white rounded-3xl border border-black/5 p-6 cursor-pointer">
+          <summary class="flex items-center justify-between font-semibold cursor-pointer list-none">
+            Comment faire un QR code qui ouvre un PDF ?
+            <ion-icon name="chevron-down-outline" class="chev text-mute"></ion-icon>
+          </summary>
+          <p class="text-mute text-sm mt-4">Un QR code contient un lien, pas le fichier lui-même. Dans l'onglet PDF, collez le lien d'un PDF déjà en ligne, ou envoyez votre fichier : Facilo l'héberge et génère le lien pour vous. Au scan, le téléphone ouvre le PDF. Si vous remplacez le fichier plus tard, gardez la même adresse pour que le QR code déjà imprimé continue de fonctionner.</p>
         </details>
         <details class="accordion-item bg-white rounded-3xl border border-black/5 p-6 cursor-pointer">
           <summary class="flex items-center justify-between font-semibold cursor-pointer list-none">
@@ -553,12 +583,18 @@
 
   const MARGIN = 4; // zone de silence (en modules), recommandée par la norme
 
+  // Envoi de PDF (vue Django)
+  const PDF_UPLOAD_URL = '{% url "qr_upload_pdf" %}';
+  const CSRF_TOKEN = '{{ csrf_token }}';
+  const PDF_MAX_SIZE = 10 * 1024 * 1024;
+
   // ---------- éléments ----------
   const $ = (id) => document.getElementById(id);
   const tabButtons = document.querySelectorAll('.tab-btn');
   const tabPanels = document.querySelectorAll('.tab-panel');
 
   const fUrl = $('f-url'), fText = $('f-text');
+  const fPdfUrl = $('f-pdfurl'), fPdfFile = $('f-pdffile'), pdfName = $('pdf-name'), pdfError = $('pdf-error');
   const fWaNumber = $('f-wanumber'), fWaMsg = $('f-wamsg');
   const fTelNumber = $('f-telnumber');
   const fSmsNumber = $('f-smsnumber'), fSmsMsg = $('f-smsmsg');
@@ -580,6 +616,7 @@
   let current = null;        // { qr, content }
   let logo = null;           // { dataUrl, w, h, canvas }
   let savedCorrection = fCorrection.value;
+  let pdfUploading = false;
 
   // ---------- onglets ----------
   tabButtons.forEach(btn => {
@@ -625,6 +662,22 @@
         const t = val(fText);
         if (!t) return { empty: true, message: 'Saisissez un texte pour générer le QR code.' };
         return { content: t };
+      }
+
+      case 'pdf': {
+        if (pdfUploading) return { empty: true, message: 'Envoi du PDF en cours…' };
+        let u = val(fPdfUrl);
+        if (!u) return { empty: true, message: 'Collez le lien d\'un PDF ou envoyez un fichier.' };
+        if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+        try {
+          const parsed = new URL(u);
+          if (!(parsed.hostname.includes('.') || parsed.hostname === 'localhost')) {
+            return { error: 'Adresse invalide : vérifiez le lien du PDF.' };
+          }
+        } catch (e) {
+          return { error: 'Adresse invalide : vérifiez le lien du PDF.' };
+        }
+        return { content: u };
       }
 
       case 'whatsapp': {
@@ -926,9 +979,63 @@
 
   logoRemove.addEventListener('click', clearLogo);
 
+  // ---------- envoi d'un PDF ----------
+  function showPdfError(msg){
+    pdfError.textContent = msg;
+    pdfError.classList.toggle('hidden', !msg);
+  }
+
+  fPdfFile.addEventListener('change', async () => {
+    showPdfError('');
+    const file = fPdfFile.files[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) {
+      fPdfFile.value = '';
+      pdfName.textContent = '';
+      showPdfError('Ce fichier n\'est pas un PDF.');
+      return;
+    }
+    if (file.size > PDF_MAX_SIZE) {
+      fPdfFile.value = '';
+      pdfName.textContent = '';
+      showPdfError('PDF trop lourd (10 Mo maximum).');
+      return;
+    }
+
+    pdfUploading = true;
+    pdfName.textContent = 'Envoi en cours…';
+    update();
+
+    const data = new FormData();
+    data.append('pdf', file);
+    try {
+      const res = await fetch(PDF_UPLOAD_URL, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF_TOKEN },
+        body: data
+      });
+      let json = {};
+      try { json = await res.json(); } catch (e) { /* réponse non JSON */ }
+      if (!res.ok || !json.url) throw new Error(json.error || 'Échec de l\'envoi. Réessayez.');
+      fPdfUrl.value = json.url;
+      pdfName.textContent = file.name;
+    } catch (e) {
+      pdfName.textContent = '';
+      fPdfFile.value = '';
+      showPdfError(e.message || 'Échec de l\'envoi. Réessayez.');
+    } finally {
+      pdfUploading = false;
+      update();
+    }
+  });
+
   // ---------- événements des champs ----------
-  [fUrl, fText, fWaNumber, fWaMsg, fTelNumber, fSmsNumber, fSmsMsg, fSsid, fWifipass, fEmail, fSubject, fBody]
+  [fUrl, fText, fPdfUrl, fWaNumber, fWaMsg, fTelNumber, fSmsNumber, fSmsMsg, fSsid, fWifipass, fEmail, fSubject, fBody]
     .forEach(el => el.addEventListener('input', scheduleUpdate));
+
+  // si l'utilisateur modifie le lien à la main, on oublie le nom du fichier envoyé
+  fPdfUrl.addEventListener('input', () => { pdfName.textContent = ''; fPdfFile.value = ''; showPdfError(''); });
 
   fWifitype.addEventListener('change', () => {
     const open = fWifitype.value === 'nopass';

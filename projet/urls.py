@@ -31,6 +31,7 @@ urlpatterns = [
     path( 'son/', views.son , name = 'son'),
     path("transcription/", views.transcription, name="transcription"),
     path("convertisseur/", views.convertisseur, name="convertisseur"),
+    path('qr/upload-pdf/', views.qr_upload_pdf, name='qr_upload_pdf'),
      # On inclut proprement les URLs de notre nouvelle application
     path('auth/', include('authentification.urls')), 
 

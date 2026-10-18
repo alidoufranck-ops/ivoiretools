@@ -2,7 +2,10 @@ import os
 os.environ["DISABLE_NUMBA"] = "1"
 os.environ["NUMBA_NUM_THREADS"] = "1"
 from django.shortcuts import render  # Afficher une page HTML
-
+import uuid
+from django.core.files.storage import default_storage
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 from django.core.files.base import ContentFile  # Créer un fichier à partir de données en mémoire
 
 from .models import table  # Importer notre modèle
@@ -142,3 +145,18 @@ def transcription(request):
         for path in (tmp_in_path, tmp_out_path):
             if path and os.path.exists(path):
                 os.remove(path)
+
+MAX_PDF_SIZE = 10 * 1024 * 1024
+
+@require_POST
+def qr_upload_pdf(request):
+    f = request.FILES.get('pdf')
+    if not f:
+        return JsonResponse({'error': 'Aucun fichier reçu.'}, status=400)
+    if f.size > MAX_PDF_SIZE:
+        return JsonResponse({'error': 'PDF trop lourd (10 Mo maximum).'}, status=400)
+    if f.read(5) != b'%PDF-':
+        return JsonResponse({'error': "Ce fichier n'est pas un PDF valide."}, status=400)
+    f.seek(0)
+    name = default_storage.save(f'qr_pdfs/{uuid.uuid4().hex}.pdf', f)
+    return JsonResponse({'url': request.build_absolute_uri(default_storage.url(name))})
